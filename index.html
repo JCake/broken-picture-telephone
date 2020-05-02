@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Broken Picture Telephone</title>
+
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-app.js"></script>
+
+    <!-- TODO: Add SDKs for Firebase products that you want to use
+         https://firebase.google.com/docs/web/setup#available-libraries -->
+    <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-storage.js"></script>
+
+    <script type="text/javascript">
+      // Your web app's Firebase configuration
+      var firebaseConfig = {
+        apiKey: "AIzaSyAv2cuZwaiwrEX6QyqOtlfNdnQvEzrrobs",
+        authDomain: "broken-picture-telephone.firebaseapp.com",
+        databaseURL: "https://broken-picture-telephone.firebaseio.com",
+        projectId: "broken-picture-telephone",
+        storageBucket: "broken-picture-telephone.appspot.com",
+        messagingSenderId: "412493867376",
+        appId: "1:412493867376:web:327310ab5d6ddef48807b5",
+      };
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+
+      console.log(firebase.app().name);
+      const db = firebase.firestore();
+
+      let mode = "setup";
+      let drawPrompt;
+      let myCanvas;
+      let textPrompt;
+      let inputPhrase;
+
+      let context;
+      let clickX = [];
+      let clickY = [];
+      let clickDrag = [];
+      let paint;
+      let offsetLeft = 0;
+      let offsetTop = 12;
+      //http://www.williammalone.com/articles/create-html5-canvas-javascript-drawing-app/
+      function setUp() {
+        drawPrompt = document.getElementById("drawPrompt");
+        myCanvas = document.getElementById("drawingCanvas");
+        textPrompt = document.getElementById("textPrompt");
+        inputPhrase = document.getElementById("inputPhrase");
+        submitButton = document.getElementById("submitButton");
+
+        drawPrompt.style.display = "none";
+        myCanvas.style.display = "none";
+        textPrompt.innerHTML = "Enter your game id";
+
+        context = myCanvas.getContext("2d");
+
+        myCanvas.addEventListener("mousedown", (e) => {
+          if (mode === "draw") {
+            const mouseX = e.pageX - offsetLeft;
+            const mouseY = e.pageY - offsetTop;
+            paint = true;
+            addClick(mouseX, mouseY);
+            redraw();
+          }
+        });
+        myCanvas.addEventListener("mousemove", (e) => {
+          if (paint) {
+            addClick(e.pageX - offsetLeft, e.pageY - offsetTop, true);
+            redraw();
+          }
+        });
+        myCanvas.addEventListener("mouseup", () => (paint = false));
+        myCanvas.addEventListener("mouseleave", () => (paint = false));
+      }
+
+      function addClick(x, y, dragging) {
+        clickX.push(x);
+        clickY.push(y);
+        clickDrag.push(dragging);
+      }
+
+      function redraw() {
+        context.clearRect(0, 0, context.canvas.width, context.canvas.height); // Clears the canvas
+
+        context.strokeStyle = "#df4b26";
+        context.lineJoin = "round";
+        context.lineWidth = 5;
+
+        for (var i = 0; i < clickX.length; i++) {
+          context.beginPath();
+          if (clickDrag[i] && i) {
+            context.moveTo(clickX[i - 1], clickY[i - 1]);
+          } else {
+            context.moveTo(clickX[i] - 1, clickY[i]);
+          }
+          context.lineTo(clickX[i], clickY[i]);
+          context.closePath();
+          context.stroke();
+        }
+      }
+
+      let gameId;
+      let userId = Math.ceil(Math.random() * 5000);
+      let receiveFrom;
+      let sendTo;
+      let startedPlayerIdSteps = new Map();
+      let promptNeedingMyResponse;
+      let MAX_STEP = 5;
+      function submit() {
+        if (mode == "setup") {
+          if (!gameId) {
+            gameId = inputPhrase.value;
+            db.collection("players-" + gameId).add({
+              playerId: userId,
+            });
+            inputPhrase.style.display = "none";
+            inputPhrase.value = "";
+            textPrompt.innerHTML =
+              "Click submit when all players have entered the game id";
+          } else {
+            mode = "initial";
+            textPrompt.innerHTML = "Enter a phrase";
+            inputPhrase.style.display = "block";
+            db.collection("players-" + gameId)
+              .get()
+              .then((querySnapshot) => {
+                let players = [];
+                querySnapshot.forEach((doc) =>
+                  players.push(doc.data().playerId)
+                );
+                players = players.sort();
+                const yourIndex = players.indexOf(userId);
+                receiveFrom =
+                  players[yourIndex >= 1 ? yourIndex - 1 : players.length - 1];
+                sendTo =
+                  players[yourIndex < players.length - 1 ? yourIndex + 1 : 0];
+                players.forEach((player) =>
+                  startedPlayerIdSteps.set(player, 0)
+                );
+              });
+          }
+        } else if (mode === "initial") {
+          db.collection("prompts-" + gameId).add({
+            prompt: inputPhrase.value,
+            clickX: null,
+            clickY: null,
+            clickDrag: null,
+            submittedPlayerId: userId,
+            receivingPlayerId: sendTo,
+            startedPlayerId: userId,
+            step: 1,
+          });
+          this.handleWaitingForPrompt();
+        } else if (mode === "draw") {
+          db.collection("prompts-" + gameId).add({
+            prompt: null,
+            clickX: clickX.join(","),
+            clickY: clickY.join(","),
+            clickDrag: clickDrag.join(","),
+            submittedPlayerId: userId,
+            receivingPlayerId: sendTo,
+            startedPlayerId: promptNeedingMyResponse.startedPlayerId,
+            step: promptNeedingMyResponse.step + 1,
+          });
+          this.handleWaitingForPrompt();
+        } else if (mode === "write") {
+          db.collection("prompts-" + gameId).add({
+            prompt: inputPhrase.value,
+            clickX: null,
+            clickY: null,
+            clickDrag: null,
+            submittedPlayerId: userId,
+            receivingPlayerId: sendTo,
+            startedPlayerId: promptNeedingMyResponse.startedPlayerId,
+            step: promptNeedingMyResponse.step + 1,
+          });
+          this.handleWaitingForPrompt();
+        }
+      }
+
+      function handleWaitingForPrompt() {
+        textPrompt.innerHTML = "Waiting for other player";
+        drawPrompt.style.display = "none";
+        myCanvas.style.display = "none";
+        inputPhrase.style.display = "none";
+        submitButton.style.display = "none";
+        const checkForPrompts = setInterval(() => {
+          db.collection("prompts-" + gameId)
+            .get()
+            .then((querySnapshot) => {
+              const prompts = [];
+              querySnapshot.forEach((doc) => prompts.push(doc.data()));
+              if (prompts.length >= MAX_STEP * startedPlayerIdSteps.size) {
+                mode === "reveal";
+                console.log("would now reveal all prompts and drawings");
+                clearInterval(checkForPrompts);
+              } else {
+                const promptsForMe = prompts.filter(
+                  (prompt) => prompt.submittedPlayerId === receiveFrom
+                );
+                promptNeedingMyResponse = promptsForMe.find(
+                  (prompt) =>
+                    startedPlayerIdSteps.get(prompt.startedPlayerId) <
+                      prompt.step && prompt.step < MAX_STEP
+                );
+                if (promptNeedingMyResponse) {
+                  clearInterval(checkForPrompts);
+                  myCanvas.style.display = "block";
+                  submitButton.style.display = "block";
+                  startedPlayerIdSteps.set(
+                    promptNeedingMyResponse.startedPlayerId,
+                    promptNeedingMyResponse.step
+                  );
+                  if (promptNeedingMyResponse.clickX) {
+                    clickX = promptNeedingMyResponse.clickX
+                      .split(",")
+                      .map((n) => parseInt(n));
+                    clickY = promptNeedingMyResponse.clickY
+                      .split(",")
+                      .map((n) => parseInt(n));
+                    clickDrag = promptNeedingMyResponse.clickDrag
+                      .split(",")
+                      .map((b) => b === "true");
+                    textPrompt.innerHTML = "What is this?";
+                    inputPhrase.value = "";
+                    drawPrompt.style.display = "none";
+                    textPrompt.style.display = "block";
+                    inputPhrase.style.display = "block";
+                    mode = "write";
+                  } else {
+                    document.getElementById("picturePhrase").innerHTML =
+                      promptNeedingMyResponse.prompt;
+                    context.clearRect(
+                      0,
+                      0,
+                      context.canvas.width,
+                      context.canvas.height
+                    ); // Clears the canvas
+                    clickX = [];
+                    clickY = [];
+                    clickDrag = [];
+                    drawPrompt.style.display = "block";
+                    textPrompt.style.display = "none";
+                    inputPhrase.style.display = "none";
+                    mode = "draw";
+                  }
+                }
+              }
+            });
+        }, 1500);
+      }
+    </script>
+  </head>
+  <body onload="setUp()">
+    <div id="drawPrompt">
+      Draw a picture for: <span id="picturePhrase"></span>
+    </div>
+    <canvas
+      id="drawingCanvas"
+      width="300"
+      height="300"
+      style="border: 1px black solid;"
+    ></canvas>
+    <div id="textPrompt"></div>
+    <input type="text" id="inputPhrase" />
+    <button onclick="submit()" id="submitButton">Submit</button>
+  </body>
+</html>
