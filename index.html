@@ -37,7 +37,7 @@
       let textPrompt;
       let inputPhrase;
 
-      let context;
+      let myContext;
       let clickX = [];
       let clickY = [];
       let clickDrag = [];
@@ -56,7 +56,7 @@
         myCanvas.style.display = "none";
         textPrompt.innerHTML = "Enter your game id";
 
-        context = myCanvas.getContext("2d");
+        myContext = myCanvas.getContext("2d");
 
         myCanvas.addEventListener("mousedown", (e) => {
           if (mode === "draw") {
@@ -83,21 +83,31 @@
         clickDrag.push(dragging);
       }
 
-      function redraw() {
+      function redraw(
+        context = myContext,
+        clickXToUse = clickX,
+        clickYToUse = clickY,
+        clickDragToUse = clickDrag
+      ) {
         context.clearRect(0, 0, context.canvas.width, context.canvas.height); // Clears the canvas
 
         context.strokeStyle = "#df4b26";
         context.lineJoin = "round";
         context.lineWidth = 5;
 
-        for (var i = 0; i < clickX.length; i++) {
+        if (clickXToUse !== clickX) {
+          console.log("filling rectangle");
+          context.fillRect(10, 10, 15, 20);
+        }
+
+        for (var i = 0; i < clickXToUse.length; i++) {
           context.beginPath();
-          if (clickDrag[i] && i) {
-            context.moveTo(clickX[i - 1], clickY[i - 1]);
+          if (clickDragToUse[i] && i) {
+            context.moveTo(clickXToUse[i - 1], clickYToUse[i - 1]);
           } else {
-            context.moveTo(clickX[i] - 1, clickY[i]);
+            context.moveTo(clickXToUse[i] - 1, clickYToUse[i]);
           }
-          context.lineTo(clickX[i], clickY[i]);
+          context.lineTo(clickXToUse[i], clickYToUse[i]);
           context.closePath();
           context.stroke();
         }
@@ -109,7 +119,7 @@
       let sendTo;
       let startedPlayerIdSteps = new Map();
       let promptNeedingMyResponse;
-      let MAX_STEP = 5;
+      let MAX_STEP = 3;
       function submit() {
         if (mode == "setup") {
           if (!gameId) {
@@ -183,6 +193,7 @@
       }
 
       function handleWaitingForPrompt() {
+        textPrompt.style.display = "block";
         textPrompt.innerHTML = "Waiting for other player";
         drawPrompt.style.display = "none";
         myCanvas.style.display = "none";
@@ -196,8 +207,9 @@
               querySnapshot.forEach((doc) => prompts.push(doc.data()));
               if (prompts.length >= MAX_STEP * startedPlayerIdSteps.size) {
                 mode === "reveal";
-                console.log("would now reveal all prompts and drawings");
+                document.getElementById("duringGame").style.display = "none";
                 clearInterval(checkForPrompts);
+                displayResults(prompts);
               } else {
                 const promptsForMe = prompts.filter(
                   (prompt) => prompt.submittedPlayerId === receiveFrom
@@ -234,11 +246,11 @@
                   } else {
                     document.getElementById("picturePhrase").innerHTML =
                       promptNeedingMyResponse.prompt;
-                    context.clearRect(
+                    myContext.clearRect(
                       0,
                       0,
-                      context.canvas.width,
-                      context.canvas.height
+                      myContext.canvas.width,
+                      myContext.canvas.height
                     ); // Clears the canvas
                     clickX = [];
                     clickY = [];
@@ -253,20 +265,67 @@
             });
         }, 1500);
       }
+
+      function displayResults(prompts) {
+        const afterGameDiv = document.getElementById("afterGame");
+        afterGameDiv.style.display = "block";
+        const startingPlayerToPrompts = new Map();
+        startedPlayerIdSteps.forEach((value, key) => {
+          startingPlayerToPrompts.set(key, []);
+        });
+        prompts.forEach((prompt) => {
+          startingPlayerToPrompts.get(prompt.startedPlayerId).push(prompt);
+        });
+        startingPlayerToPrompts.forEach((value, key) => {
+          const promptsInOrder = value.sort(
+            (prompt1, prompt2) => prompt1.step - prompt2.step
+          );
+          promptsInOrder.forEach((prompt) => {
+            if (prompt.clickX) {
+              afterGameDiv.innerHTML += `<canvas
+                id="drawingCanvas${prompt.startedPlayerId}S${prompt.step}"
+                width="300"
+                height="300"
+                style="border: 1px black solid;"
+              ></canvas>`;
+              const thisContext = document
+                .getElementById(
+                  `drawingCanvas${prompt.startedPlayerId}S${prompt.step}`
+                )
+                .getContext("2d");
+              const thisClickX = prompt.clickX
+                .split(",")
+                .map((n) => parseInt(n));
+              const thisClickY = prompt.clickY
+                .split(",")
+                .map((n) => parseInt(n));
+              const thisClickDrag = prompt.clickDrag
+                .split(",")
+                .map((b) => b === "true");
+              redraw(thisContext, thisClickX, thisClickY, thisClickDrag);
+            } else {
+              afterGameDiv.innerHTML += `<span> -- ${prompt.prompt} -- </span>`;
+            }
+          });
+        });
+      }
     </script>
   </head>
   <body onload="setUp()">
-    <div id="drawPrompt">
-      Draw a picture for: <span id="picturePhrase"></span>
+    <div id="duringGame">
+      <div id="drawPrompt">
+        Draw a picture for: <span id="picturePhrase"></span>
+      </div>
+      <canvas
+        id="drawingCanvas"
+        width="300"
+        height="300"
+        style="border: 1px black solid;"
+      ></canvas>
+      <div id="textPrompt"></div>
+      <input type="text" id="inputPhrase" />
+      <button onclick="submit()" id="submitButton">Submit</button>
     </div>
-    <canvas
-      id="drawingCanvas"
-      width="300"
-      height="300"
-      style="border: 1px black solid;"
-    ></canvas>
-    <div id="textPrompt"></div>
-    <input type="text" id="inputPhrase" />
-    <button onclick="submit()" id="submitButton">Submit</button>
+    <div id="afterGame" style="display: none;"></div>
   </body>
 </html>
