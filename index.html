@@ -212,7 +212,9 @@
                 displayResults(prompts);
               } else {
                 const promptsForMe = prompts.filter(
-                  (prompt) => prompt.submittedPlayerId === receiveFrom
+                  (prompt) =>
+                    prompt.submittedPlayerId === receiveFrom &&
+                    prompt.receivingPlayerId === userId
                 );
                 promptNeedingMyResponse = promptsForMe.find(
                   (prompt) =>
@@ -237,6 +239,7 @@
                     clickDrag = promptNeedingMyResponse.clickDrag
                       .split(",")
                       .map((b) => b === "true");
+                    redraw();
                     textPrompt.innerHTML = "What is this?";
                     inputPhrase.value = "";
                     drawPrompt.style.display = "none";
