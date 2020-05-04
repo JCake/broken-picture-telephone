@@ -42,6 +42,8 @@
       let clickY = [];
       let clickDrag = [];
       let paint;
+      let usingMouse;
+      let usingPointer;
       let offsetLeft = 4;
       let offsetTop = 16;
       //http://www.williammalone.com/articles/create-html5-canvas-javascript-drawing-app/
@@ -63,6 +65,7 @@
             const mouseX = e.pageX - offsetLeft;
             const mouseY = e.pageY - offsetTop;
             paint = true;
+            usingMouse = true;
             addClick(mouseX, mouseY);
             redraw();
           }
@@ -73,8 +76,46 @@
             redraw();
           }
         });
-        myCanvas.addEventListener("mouseup", () => (paint = false));
-        myCanvas.addEventListener("mouseleave", () => (paint = false));
+        myCanvas.addEventListener("mouseup", () => {
+          if (usingMouse) {
+            paint = false;
+            usingMouse = false;
+          }
+        });
+        myCanvas.addEventListener("mouseleave", () => {
+          if (usingMouse) {
+            paint = false;
+            usingMouse = false;
+          }
+        });
+
+        myCanvas.addEventListener("touchstart", (e) => {
+          if (mode === "draw") {
+            const mouseX = e.touches[0].pageX - offsetLeft;
+            const mouseY = e.touches[0].pageY - offsetTop;
+            paint = true;
+            usingPointer = true;
+            addClick(mouseX, mouseY);
+            redraw();
+          }
+        });
+        myCanvas.addEventListener("touchmove", (e) => {
+          if (paint) {
+            addClick(
+              e.touches[0].pageX - offsetLeft,
+              e.touches[0].pageY - offsetTop,
+              true
+            );
+            redraw();
+          }
+        });
+
+        myCanvas.addEventListener("touchend", () => {
+          if (usingPointer) {
+            paint = false;
+            usingPointer = false;
+          }
+        });
       }
 
       function addClick(x, y, dragging) {
