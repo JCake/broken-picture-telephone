@@ -42,8 +42,8 @@
       let clickY = [];
       let clickDrag = [];
       let paint;
-      let offsetLeft = 0;
-      let offsetTop = 12;
+      let offsetLeft = 4;
+      let offsetTop = 16;
       //http://www.williammalone.com/articles/create-html5-canvas-javascript-drawing-app/
       function setUp() {
         drawPrompt = document.getElementById("drawPrompt");
@@ -117,12 +117,12 @@
       }
 
       let gameId;
-      let userId = Math.ceil(Math.random() * 5000);
+      let userId = Math.ceil(Math.random() * 50000);
       let receiveFrom;
       let sendTo;
       let startedPlayerIdSteps = new Map();
       let promptNeedingMyResponse;
-      let MAX_STEP = 3;
+      let MAX_STEP = 7;
       function submit() {
         if (mode == "setup") {
           if (!gameId) {
@@ -284,6 +284,10 @@
           const promptsInOrder = value.sort(
             (prompt1, prompt2) => prompt1.step - prompt2.step
           );
+          const afterGameDiv0 = document.getElementById("afterGame");
+          const title = document.createElement("p");
+          title.innerText = `Chain ${key}`;
+          afterGameDiv0.appendChild(title);
           promptsInOrder.forEach((prompt) => {
             const afterGameDiv = document.getElementById("afterGame");
             if (prompt.clickX) {
