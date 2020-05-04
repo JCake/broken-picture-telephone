@@ -89,16 +89,19 @@
         clickYToUse = clickY,
         clickDragToUse = clickDrag
       ) {
+        if (context !== myContext) {
+          console.log(myContext);
+          console.log(context);
+          console.log(clickXToUse);
+          console.log(clickYToUse);
+          console.log(clickDragToUse);
+        }
+
         context.clearRect(0, 0, context.canvas.width, context.canvas.height); // Clears the canvas
 
         context.strokeStyle = "#df4b26";
         context.lineJoin = "round";
         context.lineWidth = 5;
-
-        if (clickXToUse !== clickX) {
-          console.log("filling rectangle");
-          context.fillRect(10, 10, 15, 20);
-        }
 
         for (var i = 0; i < clickXToUse.length; i++) {
           context.beginPath();
@@ -270,8 +273,6 @@
       }
 
       function displayResults(prompts) {
-        const afterGameDiv = document.getElementById("afterGame");
-        afterGameDiv.style.display = "block";
         const startingPlayerToPrompts = new Map();
         startedPlayerIdSteps.forEach((value, key) => {
           startingPlayerToPrompts.set(key, []);
@@ -284,18 +285,17 @@
             (prompt1, prompt2) => prompt1.step - prompt2.step
           );
           promptsInOrder.forEach((prompt) => {
+            const afterGameDiv = document.getElementById("afterGame");
             if (prompt.clickX) {
-              afterGameDiv.innerHTML += `<canvas
-                id="drawingCanvas${prompt.startedPlayerId}S${prompt.step}"
-                width="300"
-                height="300"
-                style="border: 1px black solid;"
-              ></canvas>`;
-              const thisContext = document
-                .getElementById(
-                  `drawingCanvas${prompt.startedPlayerId}S${prompt.step}`
-                )
-                .getContext("2d");
+              const canv = document.createElement("canvas");
+              canv.id = `drawingCanvas${prompt.startedPlayerId}S${prompt.step}`;
+              canv.width = 300;
+              canv.height = 300;
+              canv.style = "border: 1px black solid;";
+
+              afterGameDiv.appendChild(canv); // adds the canvas
+
+              const thisContext = canv.getContext("2d");
               const thisClickX = prompt.clickX
                 .split(",")
                 .map((n) => parseInt(n));
@@ -307,7 +307,9 @@
                 .map((b) => b === "true");
               redraw(thisContext, thisClickX, thisClickY, thisClickDrag);
             } else {
-              afterGameDiv.innerHTML += `<span> -- ${prompt.prompt} -- </span>`;
+              const span = document.createElement("span");
+              span.innerText = ` -- ${prompt.prompt} -- `;
+              afterGameDiv.appendChild(span);
             }
           });
         });
@@ -329,6 +331,6 @@
       <input type="text" id="inputPhrase" />
       <button onclick="submit()" id="submitButton">Submit</button>
     </div>
-    <div id="afterGame" style="display: none;"></div>
+    <div id="afterGame"></div>
   </body>
 </html>
