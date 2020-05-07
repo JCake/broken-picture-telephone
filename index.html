@@ -168,15 +168,38 @@
         if (mode == "setup") {
           if (!gameId) {
             gameId = inputPhrase.value;
-            db.collection("players-" + gameId).add({
-              playerId: userId,
-            });
-            inputPhrase.style.display = "none";
-            inputPhrase.value = "";
-            textPrompt.innerHTML =
-              "Click submit when all players have entered the game id";
-          } else {
+            submitButton.style.display = "none";
             // Check for existing prompts before beginning:
+            db.collection("prompts-" + gameId)
+              .get()
+              .then((querySnapshot) => {
+                const prompts = [];
+                querySnapshot.forEach((doc) => prompts.push(doc.data()));
+                if (prompts.length > 0) {
+                  textPrompt.innerHTML = `Game ${gameId} already completed or in progress.  Results below.`;
+                  submitButton.style.display = "none";
+                  inputPhrase.style.display = "none";
+                  mode === "reveal";
+                  displayResults(prompts);
+                } else {
+                  db.collection("players-" + gameId).add({
+                    playerId: userId,
+                  });
+                  inputPhrase.style.display = "none";
+                  inputPhrase.value = "";
+                  textPrompt.innerHTML =
+                    "Click submit when all players have entered the game id";
+                  submitButton.style.display = "block";
+                  db.collection("players-" + gameId).onSnapshot(
+                    (querySnapshot) => {
+                      const players = [];
+                      querySnapshot.forEach((doc) => players.push(doc.data()));
+                      textPrompt.innerHTML = `There are currently ${players.length} players.  Click submit when all players have entered the game id`;
+                    }
+                  );
+                }
+              });
+          } else {
             db.collection("prompts-" + gameId)
               .get()
               .then((querySnapshot) => {
