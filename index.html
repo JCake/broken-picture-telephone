@@ -13,6 +13,7 @@
          https://firebase.google.com/docs/web/setup#available-libraries -->
     <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-storage.js"></script>
+    <script type="module" src="broken-picture.js"></script>
 
     <script type="text/javascript">
       // Your web app's Firebase configuration
@@ -37,15 +38,7 @@
       let textPrompt;
       let inputPhrase;
 
-      let myContext;
-      let clickX = [];
-      let clickY = [];
-      let clickDrag = [];
       let paint;
-      let usingMouse;
-      let usingPointer;
-      let offsetLeft = 4;
-      let offsetTop = 16;
       //http://www.williammalone.com/articles/create-html5-canvas-javascript-drawing-app/
       function setUp() {
         drawPrompt = document.getElementById("drawPrompt");
@@ -77,106 +70,7 @@
               )}`;
             }
           });
-
-        myContext = myCanvas.getContext("2d");
-
-        myCanvas.addEventListener("mousedown", (e) => {
-          if (mode === "draw") {
-            const mouseX = e.pageX - offsetLeft;
-            const mouseY = e.pageY - offsetTop;
-            paint = true;
-            usingMouse = true;
-            addClick(mouseX, mouseY);
-            redraw();
-          }
-        });
-        myCanvas.addEventListener("mousemove", (e) => {
-          if (paint) {
-            addClick(e.pageX - offsetLeft, e.pageY - offsetTop, true);
-            redraw();
-          }
-        });
-        myCanvas.addEventListener("mouseup", () => {
-          if (usingMouse) {
-            paint = false;
-            usingMouse = false;
-          }
-        });
-        myCanvas.addEventListener("mouseleave", () => {
-          if (usingMouse) {
-            paint = false;
-            usingMouse = false;
-          }
-        });
-
-        myCanvas.addEventListener("touchstart", (e) => {
-          if (mode === "draw") {
-            const mouseX = e.touches[0].pageX - offsetLeft;
-            const mouseY = e.touches[0].pageY - offsetTop;
-            paint = true;
-            usingPointer = true;
-            addClick(mouseX, mouseY);
-            redraw();
-          }
-        });
-        myCanvas.addEventListener("touchmove", (e) => {
-          if (paint) {
-            addClick(
-              e.touches[0].pageX - offsetLeft,
-              e.touches[0].pageY - offsetTop,
-              true
-            );
-            redraw();
-          }
-        });
-
-        myCanvas.addEventListener("touchend", () => {
-          if (usingPointer) {
-            paint = false;
-            usingPointer = false;
-          }
-        });
       }
-
-      function addClick(x, y, dragging) {
-        clickX.push(x);
-        clickY.push(y);
-        clickDrag.push(dragging);
-      }
-
-      function redraw(
-        context = myContext,
-        clickXToUse = clickX,
-        clickYToUse = clickY,
-        clickDragToUse = clickDrag
-      ) {
-        if (context !== myContext) {
-          console.log(myContext);
-          console.log(context);
-          console.log(clickXToUse);
-          console.log(clickYToUse);
-          console.log(clickDragToUse);
-        }
-
-        context.clearRect(0, 0, context.canvas.width, context.canvas.height); // Clears the canvas
-
-        context.strokeStyle = "#df4b26";
-        context.lineJoin = "round";
-        context.lineWidth = 5;
-
-        for (var i = 0; i < clickXToUse.length; i++) {
-          context.beginPath();
-          if (clickDragToUse[i] && i) {
-            context.moveTo(clickXToUse[i - 1], clickYToUse[i - 1]);
-          } else {
-            context.moveTo(clickXToUse[i] - 1, clickYToUse[i]);
-          }
-          context.lineTo(clickXToUse[i], clickYToUse[i]);
-          context.closePath();
-          context.stroke();
-        }
-      }
-
       let gameId;
       let userId = Math.ceil(Math.random() * 50000);
       let receiveFrom;
@@ -279,9 +173,9 @@
         } else if (mode === "draw") {
           db.collection("prompts-" + gameId).add({
             prompt: null,
-            clickX: clickX.join(","),
-            clickY: clickY.join(","),
-            clickDrag: clickDrag.join(","),
+            clickX: myCanvas.clickX.join(","),
+            clickY: myCanvas.clickY.join(","),
+            clickDrag: myCanvas.clickDrag.join(","),
             submittedPlayerId: userId,
             receivingPlayerId: sendTo,
             startedPlayerId: promptNeedingMyResponse.startedPlayerId,
@@ -341,16 +235,11 @@
                   promptNeedingMyResponse.step
                 );
                 if (promptNeedingMyResponse.clickX) {
-                  clickX = promptNeedingMyResponse.clickX
-                    .split(",")
-                    .map((n) => parseInt(n));
-                  clickY = promptNeedingMyResponse.clickY
-                    .split(",")
-                    .map((n) => parseInt(n));
-                  clickDrag = promptNeedingMyResponse.clickDrag
-                    .split(",")
-                    .map((b) => b === "true");
-                  redraw();
+                  myCanvas.display({
+                    x: promptNeedingMyResponse.clickX,
+                    y: promptNeedingMyResponse.clickY,
+                    drag: promptNeedingMyResponse.clickDrag,
+                  });
                   textPrompt.innerHTML = "What is this?";
                   inputPhrase.value = "";
                   drawPrompt.style.display = "none";
@@ -360,15 +249,7 @@
                 } else {
                   document.getElementById("picturePhrase").innerHTML =
                     promptNeedingMyResponse.prompt;
-                  myContext.clearRect(
-                    0,
-                    0,
-                    myContext.canvas.width,
-                    myContext.canvas.height
-                  ); // Clears the canvas
-                  clickX = [];
-                  clickY = [];
-                  clickDrag = [];
+                  myCanvas.startDraw();
                   drawPrompt.style.display = "block";
                   textPrompt.style.display = "none";
                   inputPhrase.style.display = "none";
@@ -398,25 +279,14 @@
           promptsInOrder.forEach((prompt) => {
             const afterGameDiv = document.getElementById("afterGame");
             if (prompt.clickX) {
-              const canv = document.createElement("canvas");
+              const canv = document.createElement("broken-picture");
               canv.id = `drawingCanvas${prompt.startedPlayerId}S${prompt.step}`;
-              canv.width = 300;
-              canv.height = 300;
-              canv.style = "border: 1px black solid;";
-
               afterGameDiv.appendChild(canv); // adds the canvas
-
-              const thisContext = canv.getContext("2d");
-              const thisClickX = prompt.clickX
-                .split(",")
-                .map((n) => parseInt(n));
-              const thisClickY = prompt.clickY
-                .split(",")
-                .map((n) => parseInt(n));
-              const thisClickDrag = prompt.clickDrag
-                .split(",")
-                .map((b) => b === "true");
-              redraw(thisContext, thisClickX, thisClickY, thisClickDrag);
+              canv.display({
+                x: prompt.clickX,
+                y: prompt.clickY,
+                drag: prompt.clickDrag,
+              });
             } else {
               const span = document.createElement("span");
               span.innerText = ` -- ${prompt.prompt} -- `;
@@ -432,12 +302,7 @@
       <div id="drawPrompt">
         Draw a picture for: <span id="picturePhrase"></span>
       </div>
-      <canvas
-        id="drawingCanvas"
-        width="300"
-        height="300"
-        style="border: 1px black solid; touch-action: none;"
-      ></canvas>
+      <broken-picture id="drawingCanvas"></broken-picture>
       <div id="textPrompt"></div>
       <input type="text" id="inputPhrase" />
       <p></p>
