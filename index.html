@@ -262,74 +262,73 @@
         myCanvas.style.display = "none";
         inputPhrase.style.display = "none";
         submitButton.style.display = "none";
-        const checkForPrompts = setInterval(() => {
-          db.collection("prompts-" + gameId)
-            .get()
-            .then((querySnapshot) => {
-              const prompts = [];
-              querySnapshot.forEach((doc) => prompts.push(doc.data()));
-              if (prompts.length >= MAX_STEP * startedPlayerIdSteps.size) {
-                mode === "reveal";
-                document.getElementById("duringGame").style.display = "none";
-                clearInterval(checkForPrompts);
-                displayResults(prompts);
-              } else {
-                const promptsForMe = prompts.filter(
-                  (prompt) =>
-                    prompt.submittedPlayerId === receiveFrom &&
-                    prompt.receivingPlayerId === userId
+        const toUnsubscribe = db
+          .collection("prompts-" + gameId)
+          .onSnapshot((querySnapshot) => {
+            console.log("Got an update!");
+            const prompts = [];
+            querySnapshot.forEach((doc) => prompts.push(doc.data()));
+            if (prompts.length >= MAX_STEP * startedPlayerIdSteps.size) {
+              mode === "reveal";
+              document.getElementById("duringGame").style.display = "none";
+              toUnsubscribe();
+              displayResults(prompts);
+            } else {
+              const promptsForMe = prompts.filter(
+                (prompt) =>
+                  prompt.submittedPlayerId === receiveFrom &&
+                  prompt.receivingPlayerId === userId
+              );
+              promptNeedingMyResponse = promptsForMe.find(
+                (prompt) =>
+                  startedPlayerIdSteps.get(prompt.startedPlayerId) <
+                    prompt.step && prompt.step < MAX_STEP
+              );
+              if (promptNeedingMyResponse) {
+                toUnsubscribe();
+                myCanvas.style.display = "block";
+                submitButton.style.display = "block";
+                startedPlayerIdSteps.set(
+                  promptNeedingMyResponse.startedPlayerId,
+                  promptNeedingMyResponse.step
                 );
-                promptNeedingMyResponse = promptsForMe.find(
-                  (prompt) =>
-                    startedPlayerIdSteps.get(prompt.startedPlayerId) <
-                      prompt.step && prompt.step < MAX_STEP
-                );
-                if (promptNeedingMyResponse) {
-                  clearInterval(checkForPrompts);
-                  myCanvas.style.display = "block";
-                  submitButton.style.display = "block";
-                  startedPlayerIdSteps.set(
-                    promptNeedingMyResponse.startedPlayerId,
-                    promptNeedingMyResponse.step
-                  );
-                  if (promptNeedingMyResponse.clickX) {
-                    clickX = promptNeedingMyResponse.clickX
-                      .split(",")
-                      .map((n) => parseInt(n));
-                    clickY = promptNeedingMyResponse.clickY
-                      .split(",")
-                      .map((n) => parseInt(n));
-                    clickDrag = promptNeedingMyResponse.clickDrag
-                      .split(",")
-                      .map((b) => b === "true");
-                    redraw();
-                    textPrompt.innerHTML = "What is this?";
-                    inputPhrase.value = "";
-                    drawPrompt.style.display = "none";
-                    textPrompt.style.display = "block";
-                    inputPhrase.style.display = "block";
-                    mode = "write";
-                  } else {
-                    document.getElementById("picturePhrase").innerHTML =
-                      promptNeedingMyResponse.prompt;
-                    myContext.clearRect(
-                      0,
-                      0,
-                      myContext.canvas.width,
-                      myContext.canvas.height
-                    ); // Clears the canvas
-                    clickX = [];
-                    clickY = [];
-                    clickDrag = [];
-                    drawPrompt.style.display = "block";
-                    textPrompt.style.display = "none";
-                    inputPhrase.style.display = "none";
-                    mode = "draw";
-                  }
+                if (promptNeedingMyResponse.clickX) {
+                  clickX = promptNeedingMyResponse.clickX
+                    .split(",")
+                    .map((n) => parseInt(n));
+                  clickY = promptNeedingMyResponse.clickY
+                    .split(",")
+                    .map((n) => parseInt(n));
+                  clickDrag = promptNeedingMyResponse.clickDrag
+                    .split(",")
+                    .map((b) => b === "true");
+                  redraw();
+                  textPrompt.innerHTML = "What is this?";
+                  inputPhrase.value = "";
+                  drawPrompt.style.display = "none";
+                  textPrompt.style.display = "block";
+                  inputPhrase.style.display = "block";
+                  mode = "write";
+                } else {
+                  document.getElementById("picturePhrase").innerHTML =
+                    promptNeedingMyResponse.prompt;
+                  myContext.clearRect(
+                    0,
+                    0,
+                    myContext.canvas.width,
+                    myContext.canvas.height
+                  ); // Clears the canvas
+                  clickX = [];
+                  clickY = [];
+                  clickDrag = [];
+                  drawPrompt.style.display = "block";
+                  textPrompt.style.display = "none";
+                  inputPhrase.style.display = "none";
+                  mode = "draw";
                 }
               }
-            });
-        }, 1500);
+            }
+          });
       }
 
       function displayResults(prompts) {
