@@ -58,6 +58,26 @@
         myCanvas.style.display = "none";
         textPrompt.innerHTML = "Enter your game id";
 
+        const now = new Date().getTime();
+        db.collection("games")
+          .get()
+          .then((querySnapshot) => {
+            const createdGames = [];
+            querySnapshot.forEach((doc) => {
+              if (
+                doc.data().status === "Created" &&
+                doc.data().time > now - 1000 * 60 * 60
+              ) {
+                createdGames.push(doc.data().gameId);
+              }
+            });
+            if (createdGames.length > 0) {
+              textPrompt.innerHTML = `Enter your game id.  Perhaps you'd like to enter one of these recently created games:  ${createdGames.join(
+                " or "
+              )}`;
+            }
+          });
+
         myContext = myCanvas.getContext("2d");
 
         myCanvas.addEventListener("mousedown", (e) => {
@@ -197,46 +217,51 @@
                       textPrompt.innerHTML = `There are currently ${players.length} players.  Click submit when all players have entered the game id`;
                     }
                   );
+                  const gamesUnsub = db
+                    .collection("games")
+                    .doc(gameId)
+                    .onSnapshot((gameSnapshot) => {
+                      if (!gameSnapshot.data()) {
+                        db.collection("games").doc(gameId).set({
+                          gameId,
+                          status: "Created",
+                          time: new Date().getTime(),
+                        });
+                      } else if (
+                        gameSnapshot.data().status === "Started" &&
+                        mode === "setup"
+                      ) {
+                        gamesUnsub();
+                        submit(); // automatically trigger the second "click" if someone else starts the game
+                      }
+                    });
                 }
               });
           } else {
-            db.collection("prompts-" + gameId)
+            mode = "initial";
+            db.collection("games").doc(gameId).set({
+              gameId,
+              status: "Started",
+              time: new Date().getTime(),
+            });
+            textPrompt.innerHTML = "Game started!  Enter a phrase";
+            inputPhrase.style.display = "block";
+            db.collection("players-" + gameId)
               .get()
               .then((querySnapshot) => {
-                const prompts = [];
-                querySnapshot.forEach((doc) => prompts.push(doc.data()));
-                if (prompts.length >= MAX_STEP) {
-                  textPrompt.innerHTML =
-                    "Game already completed or in progress.  Results below.";
-                  submitButton.style.display = "none";
-                  mode === "reveal";
-                  displayResults(prompts);
-                } else {
-                  mode = "initial";
-                  textPrompt.innerHTML = "Enter a phrase";
-                  inputPhrase.style.display = "block";
-                  db.collection("players-" + gameId)
-                    .get()
-                    .then((querySnapshot) => {
-                      let players = [];
-                      querySnapshot.forEach((doc) =>
-                        players.push(doc.data().playerId)
-                      );
-                      players = players.sort();
-                      const yourIndex = players.indexOf(userId);
-                      receiveFrom =
-                        players[
-                          yourIndex >= 1 ? yourIndex - 1 : players.length - 1
-                        ];
-                      sendTo =
-                        players[
-                          yourIndex < players.length - 1 ? yourIndex + 1 : 0
-                        ];
-                      players.forEach((player) =>
-                        startedPlayerIdSteps.set(player, 0)
-                      );
-                    });
-                }
+                let players = [];
+                querySnapshot.forEach((doc) =>
+                  players.push(doc.data().playerId)
+                );
+                players = players.sort();
+                const yourIndex = players.indexOf(userId);
+                receiveFrom =
+                  players[yourIndex >= 1 ? yourIndex - 1 : players.length - 1];
+                sendTo =
+                  players[yourIndex < players.length - 1 ? yourIndex + 1 : 0];
+                players.forEach((player) =>
+                  startedPlayerIdSteps.set(player, 0)
+                );
               });
           }
         } else if (mode === "initial") {
