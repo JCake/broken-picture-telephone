@@ -1,9 +1,9 @@
 export class BrokenPicture extends HTMLElement {
-  mode = 'draw';
-  clickX = [];
-  clickY = [];
-  clickDrag = [];
   connectedCallback() {
+    this.mode = 'draw';
+    this.clickX = [];
+    this.clickY = [];
+    this.clickDrag = [];
     this.attachShadow({ mode: 'open' });
     this.render();
     this.attachListeners();
