@@ -72,7 +72,8 @@
           });
       }
       let gameId;
-      let userId = Math.ceil(Math.random() * 50000);
+      let otherUserIds = new Set();
+      let userId;
       let receiveFrom;
       let sendTo;
       let startedPlayerIdSteps = new Map();
@@ -80,84 +81,7 @@
       let MAX_STEP = 7;
       function submit() {
         if (mode == "setup") {
-          if (!gameId) {
-            gameId = inputPhrase.value;
-            submitButton.style.display = "none";
-            // Check for existing prompts before beginning:
-            db.collection("prompts-" + gameId)
-              .get()
-              .then((querySnapshot) => {
-                const prompts = [];
-                querySnapshot.forEach((doc) => prompts.push(doc.data()));
-                if (prompts.length > 0) {
-                  textPrompt.innerHTML = `Game ${gameId} already completed or in progress.  Results below.`;
-                  submitButton.style.display = "none";
-                  inputPhrase.style.display = "none";
-                  mode === "reveal";
-                  displayResults(prompts);
-                } else {
-                  db.collection("players-" + gameId).add({
-                    playerId: userId,
-                  });
-                  inputPhrase.style.display = "none";
-                  inputPhrase.value = "";
-                  textPrompt.innerHTML =
-                    "Click submit when all players have entered the game id";
-                  submitButton.style.display = "block";
-                  db.collection("players-" + gameId).onSnapshot(
-                    (querySnapshot) => {
-                      const players = [];
-                      querySnapshot.forEach((doc) => players.push(doc.data()));
-                      textPrompt.innerHTML = `There are currently ${players.length} players.  Click submit when all players have entered the game id`;
-                    }
-                  );
-                  const gamesUnsub = db
-                    .collection("games")
-                    .doc(gameId)
-                    .onSnapshot((gameSnapshot) => {
-                      if (!gameSnapshot.data()) {
-                        db.collection("games").doc(gameId).set({
-                          gameId,
-                          status: "Created",
-                          time: new Date().getTime(),
-                        });
-                      } else if (
-                        gameSnapshot.data().status === "Started" &&
-                        mode === "setup"
-                      ) {
-                        gamesUnsub();
-                        submit(); // automatically trigger the second "click" if someone else starts the game
-                      }
-                    });
-                }
-              });
-          } else {
-            mode = "initial";
-            db.collection("games").doc(gameId).set({
-              gameId,
-              status: "Started",
-              time: new Date().getTime(),
-            });
-            textPrompt.innerHTML = "Game started!  Enter a phrase";
-            inputPhrase.style.display = "block";
-            db.collection("players-" + gameId)
-              .get()
-              .then((querySnapshot) => {
-                let players = [];
-                querySnapshot.forEach((doc) =>
-                  players.push(doc.data().playerId)
-                );
-                players = players.sort();
-                const yourIndex = players.indexOf(userId);
-                receiveFrom =
-                  players[yourIndex >= 1 ? yourIndex - 1 : players.length - 1];
-                sendTo =
-                  players[yourIndex < players.length - 1 ? yourIndex + 1 : 0];
-                players.forEach((player) =>
-                  startedPlayerIdSteps.set(player, 0)
-                );
-              });
-          }
+          this.handleSetup();
         } else if (mode === "initial") {
           db.collection("prompts-" + gameId).add({
             prompt: inputPhrase.value,
@@ -194,6 +118,102 @@
             step: promptNeedingMyResponse.step + 1,
           });
           this.handleWaitingForPrompt();
+        }
+      }
+
+      function handleSetup() {
+        if (!gameId && !userId) {
+          gameId = inputPhrase.value;
+          submitButton.style.display = "none";
+          // Check for existing prompts before beginning:
+          db.collection("prompts-" + gameId)
+            .get()
+            .then((querySnapshot) => {
+              const prompts = [];
+              querySnapshot.forEach((doc) => prompts.push(doc.data()));
+              if (prompts.length > 0) {
+                // TODO handle rejoining - enter user id to rejoin or leave blank to see results so far
+                textPrompt.innerHTML = `Game ${gameId} already completed or in progress.  Results below.`;
+                submitButton.style.display = "none";
+                inputPhrase.style.display = "none";
+                mode === "reveal";
+                displayResults(prompts);
+              } else {
+                // This is waiting for both you and other players to join:
+                db.collection("players-" + gameId).onSnapshot(
+                  (querySnapshot) => {
+                    querySnapshot.forEach((doc) =>
+                      otherUserIds.add(doc.data().playerId)
+                    );
+                    textPrompt.innerHTML = `There are currently ${
+                      otherUserIds.size
+                    } players: ${[...otherUserIds].join(", ")}.`;
+                    if (userId) {
+                      textPrompt.innerHTML +=
+                        "Click submit when all players have entered the game id.";
+                    } else {
+                      textPrompt.innerHTML += "Enter a user id.";
+                    }
+                  }
+                );
+              }
+              inputPhrase.value = "";
+              submitButton.style.display = "block";
+            });
+        } else if (!userId) {
+          if (inputPhrase.value === "") {
+            textPrompt.innerHTML = "Enter a user id";
+          }
+          if (otherUserIds.has(inputPhrase.value)) {
+            textPrompt.innerHTML = "User id already in use.  Try another.";
+          } else {
+            userId = inputPhrase.value;
+            db.collection("players-" + gameId).add({
+              playerId: userId,
+            });
+            inputPhrase.value = "";
+            inputPhrase.style.display = "none";
+            const gamesUnsub = db
+              .collection("games")
+              .doc(gameId)
+              .onSnapshot((gameSnapshot) => {
+                if (!gameSnapshot.data()) {
+                  db.collection("games").doc(gameId).set({
+                    gameId,
+                    status: "Created",
+                    time: new Date().getTime(),
+                  });
+                } else if (
+                  gameSnapshot.data().status === "Started" &&
+                  mode === "setup"
+                ) {
+                  gamesUnsub();
+                  submit(); // automatically trigger the next "click" if someone else starts the game
+                }
+              });
+          }
+        } else {
+          mode = "initial";
+          db.collection("games").doc(gameId).set({
+            gameId,
+            status: "Started",
+            time: new Date().getTime(),
+          });
+          textPrompt.innerHTML = "Game started!  Enter a phrase";
+          inputPhrase.style.display = "block";
+          db.collection("players-" + gameId)
+            .get()
+            .then((querySnapshot) => {
+              let players = [];
+              querySnapshot.forEach((doc) => players.push(doc.data().playerId));
+              players = players.sort();
+              const yourIndex = players.indexOf(userId);
+              receiveFrom =
+                players[yourIndex >= 1 ? yourIndex - 1 : players.length - 1];
+              sendTo =
+                players[yourIndex < players.length - 1 ? yourIndex + 1 : 0];
+              players.forEach((player) => startedPlayerIdSteps.set(player, 0));
+            });
         }
       }
 
