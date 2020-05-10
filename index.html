@@ -50,6 +50,12 @@
         myCanvas.style.display = "none";
         textPrompt.innerHTML = "Enter your game id";
 
+        document.addEventListener("keyup", (e) => {
+          if (e.key === "Enter") {
+            this.submit();
+          }
+        });
+
         const now = new Date().getTime();
         db.collection("games")
           .get()
