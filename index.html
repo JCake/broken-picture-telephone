@@ -120,6 +120,7 @@
         }
       }
 
+      let gameAlreadyStarted = false;
       function handleSetup() {
         if (!gameId && !userId) {
           gameId = inputPhrase.value;
@@ -132,11 +133,7 @@
               querySnapshot.forEach((doc) => prompts.push(doc.data()));
               if (prompts.length > 0) {
                 // TODO handle rejoining - enter user id to rejoin or leave blank to see results so far
-                textPrompt.innerHTML = `Game ${gameId} already completed or in progress.  Results below.`;
-                submitButton.style.display = "none";
-                inputPhrase.style.display = "none";
-                mode === "reveal";
-                displayResults(prompts);
+                textPrompt.innerHTML = `Game ${gameId} already completed or in progress.  Enter your user id if you are trying to rejoin, or leave blank to see results.`;
               } else {
                 // This is waiting for both you and other players to join:
                 db.collection("players-" + gameId).onSnapshot(
@@ -160,36 +157,68 @@
               submitButton.style.display = "block";
             });
         } else if (!userId) {
-          if (inputPhrase.value === "") {
-            textPrompt.innerHTML = "Enter a user id";
-          }
-          if (otherUserIds.has(inputPhrase.value)) {
-            textPrompt.innerHTML = "User id already in use.  Try another.";
+          if (gameAlreadyStarted) {
+            if (inputPhrase.value === "") {
+              // Show results from game:
+              textPrompt.innerHTML = `Results from ${gameId}.`;
+              submitButton.style.display = "none";
+              inputPhrase.style.display = "none";
+              mode === "reveal";
+              displayResults(prompts);
+            } else {
+              userId = inputPhrase.value;
+              db.collection("players-" + gameId)
+                .get()
+                .then((querySnapshot) => {
+                  let players = [];
+                  querySnapshot.forEach((doc) =>
+                    players.push(doc.data().playerId)
+                  );
+                  players = players.sort();
+                  const yourIndex = players.indexOf(userId);
+                  if (yourIndex < 0) {
+                    textPrompt.innerHTML = `Player id does not exist.  Instead showing results from ${gameId}:`;
+                    submitButton.style.display = "none";
+                    inputPhrase.style.display = "none";
+                    mode === "reveal";
+                    displayResults(prompts);
+                  } else {
+                    this.rejoinGame(players, yourIndex);
+                  }
+                });
+            }
           } else {
-            userId = inputPhrase.value;
-            db.collection("players-" + gameId).add({
-              playerId: userId,
-            });
-            inputPhrase.value = "";
-            inputPhrase.style.display = "none";
-            const gamesUnsub = db
-              .collection("games")
-              .doc(gameId)
-              .onSnapshot((gameSnapshot) => {
-                if (!gameSnapshot.data()) {
-                  db.collection("games").doc(gameId).set({
-                    gameId,
-                    status: "Created",
-                    time: new Date().getTime(),
-                  });
-                } else if (
-                  gameSnapshot.data().status === "Started" &&
-                  mode === "setup"
-                ) {
-                  gamesUnsub();
-                  submit(); // automatically trigger the next "click" if someone else starts the game
-                }
+            if (inputPhrase.value === "") {
+              textPrompt.innerHTML = "Enter a user id";
+            }
+            if (otherUserIds.has(inputPhrase.value)) {
+              textPrompt.innerHTML = "User id already in use.  Try another.";
+            } else {
+              userId = inputPhrase.value;
+              db.collection("players-" + gameId).add({
+                playerId: userId,
               });
+              inputPhrase.value = "";
+              inputPhrase.style.display = "none";
+              const gamesUnsub = db
+                .collection("games")
+                .doc(gameId)
+                .onSnapshot((gameSnapshot) => {
+                  if (!gameSnapshot.data()) {
+                    db.collection("games").doc(gameId).set({
+                      gameId,
+                      status: "Created",
+                      time: new Date().getTime(),
+                    });
+                  } else if (
+                    gameSnapshot.data().status === "Started" &&
+                    mode === "setup"
+                  ) {
+                    gamesUnsub();
+                    submit(); // automatically trigger the next "click" if someone else starts the game
+                  }
+                });
+            }
           }
         } else {
           mode = "initial";
@@ -214,6 +243,23 @@
               players.forEach((player) => startedPlayerIdSteps.set(player, 0));
             });
         }
+      }
+
+      function rejoinGame(players, yourIndex) {
+        receiveFrom =
+          players[yourIndex >= 1 ? yourIndex - 1 : players.length - 1];
+        sendTo = players[yourIndex < players.length - 1 ? yourIndex + 1 : 0];
+        db.collection("prompts-" + gameId)
+          .get()
+          .then((querySnapshot) => {
+            let players = [];
+            querySnapshot.forEach((doc) => {
+              const data = doc.data();
+              if (startedPlayerIdSteps.get(data.playerId) < data.step - 1) {
+                startedPlayerIdSteps.set(data.playerId, data.step - 1);
+              }
+            });
+          });
       }
 
       function handleWaitingForPrompt() {
