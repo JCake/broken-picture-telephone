@@ -1,3 +1,4 @@
 # Running
 
-    npx serve
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+serve

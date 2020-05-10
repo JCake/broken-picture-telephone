@@ -133,6 +133,7 @@
               querySnapshot.forEach((doc) => prompts.push(doc.data()));
               if (prompts.length > 0) {
                 // TODO handle rejoining - enter user id to rejoin or leave blank to see results so far
+                gameAlreadyStarted = true;
                 textPrompt.innerHTML = `Game ${gameId} already completed or in progress.  Enter your user id if you are trying to rejoin, or leave blank to see results.`;
               } else {
                 // This is waiting for both you and other players to join:
@@ -158,6 +159,7 @@
             });
         } else if (!userId) {
           if (gameAlreadyStarted) {
+            textPrompt.style.display = "block";
             if (inputPhrase.value === "") {
               // Show results from game:
               textPrompt.innerHTML = `Results from ${gameId}.`;
@@ -252,13 +254,56 @@
         db.collection("prompts-" + gameId)
           .get()
           .then((querySnapshot) => {
-            let players = [];
+            let prompts = [];
             querySnapshot.forEach((doc) => {
-              const data = doc.data();
-              if (startedPlayerIdSteps.get(data.playerId) < data.step - 1) {
-                startedPlayerIdSteps.set(data.playerId, data.step - 1);
-              }
+              prompts.push(doc.data());
             });
+
+            players.forEach((player) => {
+              startedPlayerIdSteps.set(player, 0);
+            });
+
+            const promptsForMe = prompts.filter(
+              (prompt) =>
+                prompt.submittedPlayerId === receiveFrom &&
+                prompt.receivingPlayerId === userId
+            );
+            const promptsFromMe = prompts.filter(
+              (prompt) =>
+                prompt.submittedPlayerId === userId &&
+                prompt.receivingPlayerId === sendTo
+            );
+            promptNeedingMyResponse = null;
+            promptsForMe
+              .sort((p1, p2) => p1.step - p2.step)
+              .forEach((prompt) => {
+                const startPlayer = prompt.startedPlayerId;
+                const step = prompt.step;
+                const myResponse = promptsFromMe.find(
+                  (fromMe) =>
+                    fromMe.startedPlayerId === startPlayer &&
+                    fromMe.step === step + 1
+                );
+                console.log(
+                  "start player: " +
+                    startPlayer +
+                    ", step: " +
+                    step +
+                    ", my response:"
+                );
+                console.log(myResponse);
+                if (myResponse) {
+                  startedPlayerIdSteps.set(startPlayer, step);
+                } else if (!promptNeedingMyResponse) {
+                  promptNeedingMyResponse = prompt;
+                }
+              });
+
+            if (promptNeedingMyResponse) {
+              this.handlePromptNeedingResponse();
+            } else {
+              this.handleWaitingForPrompt();
+            }
           });
       }
 
@@ -293,36 +338,40 @@
               );
               if (promptNeedingMyResponse) {
                 toUnsubscribe();
-                myCanvas.style.display = "block";
-                submitButton.style.display = "block";
-                startedPlayerIdSteps.set(
-                  promptNeedingMyResponse.startedPlayerId,
-                  promptNeedingMyResponse.step
-                );
-                if (promptNeedingMyResponse.clickX) {
-                  myCanvas.display({
-                    x: promptNeedingMyResponse.clickX,
-                    y: promptNeedingMyResponse.clickY,
-                    drag: promptNeedingMyResponse.clickDrag,
-                  });
-                  textPrompt.innerHTML = "What is this?";
-                  inputPhrase.value = "";
-                  drawPrompt.style.display = "none";
-                  textPrompt.style.display = "block";
-                  inputPhrase.style.display = "block";
-                  mode = "write";
-                } else {
-                  document.getElementById("picturePhrase").innerHTML =
-                    promptNeedingMyResponse.prompt;
-                  myCanvas.startDraw();
-                  drawPrompt.style.display = "block";
-                  textPrompt.style.display = "none";
-                  inputPhrase.style.display = "none";
-                  mode = "draw";
-                }
+                this.handlePromptNeedingResponse();
               }
             }
           });
+      }
+
+      function handlePromptNeedingResponse() {
+        myCanvas.style.display = "block";
+        submitButton.style.display = "block";
+        startedPlayerIdSteps.set(
+          promptNeedingMyResponse.startedPlayerId,
+          promptNeedingMyResponse.step
+        );
+        if (promptNeedingMyResponse.clickX) {
+          myCanvas.display({
+            x: promptNeedingMyResponse.clickX,
+            y: promptNeedingMyResponse.clickY,
+            drag: promptNeedingMyResponse.clickDrag,
+          });
+          textPrompt.innerHTML = "What is this?";
+          inputPhrase.value = "";
+          drawPrompt.style.display = "none";
+          textPrompt.style.display = "block";
+          inputPhrase.style.display = "block";
+          mode = "write";
+        } else {
+          document.getElementById("picturePhrase").innerHTML =
+            promptNeedingMyResponse.prompt;
+          myCanvas.startDraw();
+          drawPrompt.style.display = "block";
+          textPrompt.style.display = "none";
+          inputPhrase.style.display = "none";
+          mode = "draw";
+        }
       }
 
       function displayResults(prompts) {
