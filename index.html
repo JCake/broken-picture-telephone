@@ -133,9 +133,22 @@
               querySnapshot.forEach((doc) => prompts.push(doc.data()));
               if (prompts.length > 0) {
                 // TODO handle rejoining - enter user id to rejoin or leave blank to see results so far
-                gameAlreadyStarted = true;
-                textPrompt.innerHTML = `Game ${gameId} already completed or in progress.  Enter your user id if you are trying to rejoin, or leave blank to see results.`;
+                let uniquePlayers = new Set(
+                  prompts.map((prompt) => prompt.startedPlayerId)
+                );
+                if (uniquePlayers.size * MAX_STEP <= prompts.length) {
+                  textPrompt.innerHTML = `Game complete.  Results from ${gameId}.`;
+                  submitButton.style.display = "none";
+                  inputPhrase.style.display = "none";
+                  mode === "reveal";
+                  this.displayResults(prompts);
+                } else {
+                  submitButton.style.display = "block";
+                  gameAlreadyStarted = true;
+                  textPrompt.innerHTML = `Game ${gameId} already completed or in progress.  Enter your user id if you are trying to rejoin, or leave blank to see results.`;
+                }
               } else {
+                submitButton.style.display = "block";
                 // This is waiting for both you and other players to join:
                 db.collection("players-" + gameId).onSnapshot(
                   (querySnapshot) => {
@@ -155,7 +168,6 @@
                 );
               }
               inputPhrase.value = "";
-              submitButton.style.display = "block";
             });
         } else if (!userId) {
           if (gameAlreadyStarted) {
@@ -166,7 +178,7 @@
               submitButton.style.display = "none";
               inputPhrase.style.display = "none";
               mode === "reveal";
-              displayResults(prompts);
+              this.getAndDisplayResults();
             } else {
               userId = inputPhrase.value;
               db.collection("players-" + gameId)
@@ -183,7 +195,7 @@
                     submitButton.style.display = "none";
                     inputPhrase.style.display = "none";
                     mode === "reveal";
-                    displayResults(prompts);
+                    this.getAndDisplayResults();
                   } else {
                     this.rejoinGame(players, yourIndex);
                   }
@@ -321,6 +333,11 @@
             const prompts = [];
             querySnapshot.forEach((doc) => prompts.push(doc.data()));
             if (prompts.length >= MAX_STEP * startedPlayerIdSteps.size) {
+              db.collection("games").doc(gameId).set({
+                gameId,
+                status: "Completed",
+                time: new Date().getTime(),
+              });
               mode === "reveal";
               document.getElementById("duringGame").style.display = "none";
               toUnsubscribe();
@@ -372,6 +389,16 @@
           inputPhrase.style.display = "none";
           mode = "draw";
         }
+      }
+
+      function getAndDisplayResults() {
+        db.collection("prompts-" + gameId)
+          .get()
+          .then((querySnapshot) => {
+            const prompts = [];
+            querySnapshot.forEach((doc) => prompts.push(doc.data()));
+            this.displayResults(prompts);
+          });
       }
 
       function displayResults(prompts) {
