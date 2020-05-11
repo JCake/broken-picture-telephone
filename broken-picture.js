@@ -118,7 +118,7 @@ export class BrokenPicture extends HTMLElement {
   }
   startDraw() {
     this.mode = "draw";
-    this.clearButton.style.display = "block";
+    this.clearButton.style.display = "inline-block";
     this.clickX = [];
     this.clickY = [];
     this.clickDrag = [];
