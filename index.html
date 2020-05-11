@@ -252,6 +252,7 @@
           });
           textPrompt.innerHTML = "Game started!  Enter a phrase";
           inputPhrase.style.display = "block";
+          inputPhrase.focus();
           db.collection("players-" + gameId)
             .get()
             .then((querySnapshot) => {
@@ -380,6 +381,7 @@
           drawPrompt.style.display = "none";
           textPrompt.style.display = "block";
           inputPhrase.style.display = "block";
+          inputPhrase.focus();
           mode = "write";
         } else {
           document.getElementById("picturePhrase").innerHTML =
@@ -446,7 +448,7 @@
       </div>
       <broken-picture id="drawingCanvas"></broken-picture>
       <div id="textPrompt"></div>
-      <input type="text" id="inputPhrase" />
+      <input type="text" id="inputPhrase" autofocus />
       <p></p>
       <button onclick="submit()" id="submitButton">Submit</button>
     </div>
