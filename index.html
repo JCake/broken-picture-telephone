@@ -134,50 +134,7 @@
         if (!gameId && !userId) {
           gameId = inputPhrase.value;
           submitButton.style.display = "none";
-          // Check for existing prompts before beginning:
-          db.collection("prompts-" + gameId)
-            .get()
-            .then((querySnapshot) => {
-              const prompts = [];
-              querySnapshot.forEach((doc) => prompts.push(doc.data()));
-              if (prompts.length > 0) {
-                // TODO handle rejoining - enter user id to rejoin or leave blank to see results so far
-                let uniquePlayers = new Set(
-                  prompts.map((prompt) => prompt.startedPlayerId)
-                );
-                if (uniquePlayers.size * MAX_STEP <= prompts.length) {
-                  textPrompt.innerHTML = `Game complete.  Results from ${gameId}.`;
-                  submitButton.style.display = "none";
-                  inputPhrase.style.display = "none";
-                  mode === "reveal";
-                  this.displayResults(prompts);
-                } else {
-                  submitButton.style.display = "block";
-                  gameAlreadyStarted = true;
-                  textPrompt.innerHTML = `Game ${gameId} already completed or in progress.  Enter your user id if you are trying to rejoin, or leave blank to see results.`;
-                }
-              } else {
-                submitButton.style.display = "block";
-                // This is waiting for both you and other players to join:
-                db.collection("players-" + gameId).onSnapshot(
-                  (querySnapshot) => {
-                    querySnapshot.forEach((doc) =>
-                      otherUserIds.add(doc.data().playerId)
-                    );
-                    textPrompt.innerHTML = `There are currently ${
-                      otherUserIds.size
-                    } players: ${[...otherUserIds].join(", ")}.`;
-                    if (userId) {
-                      textPrompt.innerHTML +=
-                        "Click submit when all players have entered the game id.";
-                    } else {
-                      textPrompt.innerHTML += "Enter a user id.";
-                    }
-                  }
-                );
-              }
-              inputPhrase.value = "";
-            });
+          this.checkForExistingPromptsAndAdvance();
         } else if (!userId) {
           if (gameAlreadyStarted) {
             textPrompt.style.display = "block";
@@ -267,6 +224,59 @@
               players.forEach((player) => startedPlayerIdSteps.set(player, 0));
             });
         }
+      }
+
+      function checkForExistingPromptsAndAdvance() {
+        console.log("check for game id " + gameId);
+        // Check for existing prompts before beginning:
+        db.collection("prompts-" + gameId)
+          .get()
+          .then((querySnapshot) => {
+            const prompts = [];
+            querySnapshot.forEach((doc) => prompts.push(doc.data()));
+            if (prompts.length > 0) {
+              // TODO handle rejoining - enter user id to rejoin or leave blank to see results so far
+              let uniquePlayers = new Set(
+                prompts.map((prompt) => prompt.startedPlayerId)
+              );
+              if (uniquePlayers.size * MAX_STEP <= prompts.length) {
+                textPrompt.innerHTML = `Game complete.  Results from ${gameId}.`;
+                submitButton.style.display = "none";
+                inputPhrase.style.display = "none";
+                mode === "reveal";
+                this.displayResults(prompts);
+              } else {
+                submitButton.style.display = "block";
+                gameAlreadyStarted = true;
+                textPrompt.innerHTML = `Game ${gameId} already completed or in progress.  Enter your user id if you are trying to rejoin, or leave blank to see results.`;
+              }
+            } else {
+              inputPhrase.value = "";
+              if (gameId === gameId.toLowerCase()) {
+                submitButton.style.display = "block";
+                // This is waiting for both you and other players to join:
+                db.collection("players-" + gameId).onSnapshot(
+                  (querySnapshot) => {
+                    querySnapshot.forEach((doc) =>
+                      otherUserIds.add(doc.data().playerId)
+                    );
+                    textPrompt.innerHTML = `There are currently ${
+                      otherUserIds.size
+                    } players: ${[...otherUserIds].join(", ")}.`;
+                    if (userId) {
+                      textPrompt.innerHTML +=
+                        "Click submit when all players have entered the game id.";
+                    } else {
+                      textPrompt.innerHTML += "Enter a user id.";
+                    }
+                  }
+                );
+              } else {
+                gameId = gameId.toLowerCase();
+                this.checkForExistingPromptsAndAdvance();
+              }
+            }
+          });
       }
 
       function rejoinGame(players, yourIndex) {
