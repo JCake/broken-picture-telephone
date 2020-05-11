@@ -1,10 +1,10 @@
 export class BrokenPicture extends HTMLElement {
   connectedCallback() {
-    this.mode = 'draw';
+    this.mode = "draw";
     this.clickX = [];
     this.clickY = [];
     this.clickDrag = [];
-    this.attachShadow({ mode: 'open' });
+    this.attachShadow({ mode: "open" });
     this.render();
     this.attachListeners();
     this.clear();
@@ -12,8 +12,8 @@ export class BrokenPicture extends HTMLElement {
   clear() {
     const context = this.myContext;
     context.clearRect(0, 0, context.canvas.width, context.canvas.height); // Clears the canvas
-    context.strokeStyle = '#df4b26';
-    context.lineJoin = 'round';
+    context.strokeStyle = "#df4b26";
+    context.lineJoin = "round";
     context.lineWidth = 5;
   }
   redraw(
@@ -37,7 +37,7 @@ export class BrokenPicture extends HTMLElement {
       }
     });
     this.dispatchEvent(
-      new CustomEvent('draw', {
+      new CustomEvent("draw", {
         bubbles: true,
         composed: true,
         detail: {},
@@ -45,7 +45,7 @@ export class BrokenPicture extends HTMLElement {
     );
   }
   attachListeners() {
-    this.myContext = this.canvas.getContext('2d');
+    this.myContext = this.canvas.getContext("2d");
     const myCanvas = this.canvas;
     this.canvas.width = 300;
     this.canvas.height = 300;
@@ -61,9 +61,9 @@ export class BrokenPicture extends HTMLElement {
     };
 
     myCanvas.addEventListener(
-      'pointerdown',
+      "pointerdown",
       (e) => {
-        if (this.mode === 'draw') {
+        if (this.mode === "draw") {
           const mouseX = e.pageX - offsetLeft;
           const mouseY = e.pageY - offsetTop;
           paint = true;
@@ -74,7 +74,7 @@ export class BrokenPicture extends HTMLElement {
       false
     );
     myCanvas.addEventListener(
-      'pointermove',
+      "pointermove",
       (e) => {
         if (paint) {
           addClick(e.pageX - offsetLeft, e.pageY - offsetTop, true);
@@ -84,33 +84,41 @@ export class BrokenPicture extends HTMLElement {
       false
     );
     myCanvas.addEventListener(
-      'pointerup',
+      "pointerup",
       () => {
         paint = false;
       },
       false
     );
     myCanvas.addEventListener(
-      'pointerleave',
+      "pointerleave",
       () => {
         paint = false;
       },
       false
     );
+    this.clearButton.addEventListener("click", () => {
+      this.startDraw();
+    });
   }
   get canvas() {
-    return this.shadowRoot.querySelector('canvas');
+    return this.shadowRoot.querySelector("canvas");
+  }
+  get clearButton() {
+    return this.shadowRoot.querySelector(".clear");
   }
   display(options) {
-    this.mode = 'display';
+    this.mode = "display";
+    this.clearButton.style.display = "none";
     const { x, y, drag } = options;
-    this.clickX = x.split(',').map((n) => parseInt(n));
-    this.clickY = y.split(',').map((n) => parseInt(n));
-    this.clickDrag = drag.split(',').map((b) => b === 'true');
+    this.clickX = x.split(",").map((n) => parseInt(n));
+    this.clickY = y.split(",").map((n) => parseInt(n));
+    this.clickDrag = drag.split(",").map((b) => b === "true");
     this.redraw();
   }
   startDraw() {
-    this.mode = 'draw';
+    this.mode = "draw";
+    this.clearButton.style.display = "block";
     this.clickX = [];
     this.clickY = [];
     this.clickDrag = [];
@@ -129,9 +137,12 @@ export class BrokenPicture extends HTMLElement {
             height: 300px;
             touch-action: none;
           }
+          .clear {
+            margin-left: 16px;
+          }
           </style>
-          <canvas></canvas>
+          <canvas></canvas><button class="clear">clear</button>
           `;
   }
 }
-customElements.define('broken-picture', BrokenPicture);
+customElements.define("broken-picture", BrokenPicture);
