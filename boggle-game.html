@@ -17,6 +17,8 @@
     <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-storage.js"></script>
 
+    <script src="boggle-game.js"></script>
+
     <script>
       // Your web app's Firebase configuration
       var firebaseConfig = {
@@ -151,16 +153,6 @@
         } else {
             document.getElementById('error-msg').innerHTML = 'Not a valid word';
         }
-      }
-
-      function validateEnglishWord(potentialWord){
-          // TODO implement
-        return true;
-      }
-
-      function validateFitsOnBoard(potentialWord, letters){
-          // TODO implement
-        return true;
       }
 
       function completeGame() {
