@@ -15,24 +15,59 @@ function validateEnglishWord(potentialWord) {
 }
 
 function validateFitsOnBoard(potentialWord, letters) {
-  console.log(potentialWord);
-  console.log(letters);
+  let qSpot = potentialWord.indexOf("Q");
+  potentialWord = potentialWord.replace("Q", "");
   const lettersOfWord = potentialWord.split("");
+  if (qSpot > -1) {
+    lettersOfWord[qSpot] = "QU";
+  }
   const allLetters = letters.split(",");
   const dimension = Math.floor(Math.sqrt(allLetters.length));
-  const indicesOfLetters = lettersOfWord.map((letter) =>
-    allLetters.indexOf(letter)
-  );
-  if (indicesOfLetters.every((index) => index > -1)) {
-    for (let i = 1; i < indicesOfLetters.length; i++) {
-      if (!connected(indicesOfLetters[i - 1], indicesOfLetters[i], dimension)) {
-        return false;
-      }
+  const indicesOfLetters = lettersOfWord.map((letter) => {
+    const indicesOfThisLetter = [];
+    let i = 0;
+    while (i < allLetters.length && allLetters.indexOf(letter, i) > -1) {
+      let indexOfLetter = allLetters.indexOf(letter, i);
+      indicesOfThisLetter.push(indexOfLetter);
+      i = indexOfLetter + 1;
     }
-    return true;
+    return indicesOfThisLetter;
+  });
+  if (indicesOfLetters.every((indices) => indices.length > 0)) {
+    let possibleIndexChains = [[]];
+    indicesOfLetters.forEach((setOfIndices) => {
+      let newIndexChains = [];
+      setOfIndices.forEach((index) => {
+        possibleIndexChains.forEach((existingChain) => {
+          let newChain = existingChain.slice();
+          newChain.push(index);
+          newIndexChains.push(newChain);
+        });
+      });
+      possibleIndexChains = newIndexChains;
+    });
+    let chainWorks = false;
+    possibleIndexChains.forEach((possibleIndexChain) => {
+      if (checkIndexChain(possibleIndexChain, dimension)) {
+        chainWorks = true;
+        return; // from forEach
+      }
+    });
+    return chainWorks;
   } else {
     return false;
   }
+}
+
+function checkIndexChain(possibleIndexChain, dimension) {
+  for (let i = 1; i < possibleIndexChain.length; i++) {
+    if (
+      !connected(possibleIndexChain[i - 1], possibleIndexChain[i], dimension)
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function connected(index1, index2, dimension) {

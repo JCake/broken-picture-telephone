@@ -9,7 +9,10 @@ describe("validateFitsOnBoard", () => {
     expect(validateFitsOnBoard("GOD", "D,O,G,G,O,P,E,A,T")).toBeTruthy();
   });
   it("should return false if any letters are completely disconnected", () => {
-    expect(validateFitsOnBoard("DOT", "D,O,G,G,O,P,E,A,T")).toBeFalsy();
+    expect(validateFitsOnBoard("DOT", "D,O,G,G,U,P,E,A,T")).toBeFalsy();
+    // D O G
+    // G U P
+    // E A T
   });
   it("should return true if letters appear in the board in order in a column", () => {
     expect(validateFitsOnBoard("DOG", "D,N,A,O,O,P,G,A,T")).toBeTruthy();
@@ -87,6 +90,26 @@ describe("validateFitsOnBoard", () => {
     ).toBeTruthy();
     //S C I N
     //S R Y T
+    //E N K R
+    //H L N K
+  });
+
+  it("should handle QU", () => {
+    expect(
+      validateFitsOnBoard("QUIET", "S,C,I,QU,S,R,E,T,E,N,K,R,H,L,N,K")
+    ).toBeTruthy();
+    //S C I QU
+    //S R E T
+    //E N K R
+    //H L N K
+  });
+
+  it("should handle same letter in mutliple spots", () => {
+    expect(
+      validateFitsOnBoard("DIG", "D,C,I,D,S,R,E,G,E,N,K,R,H,L,N,K")
+    ).toBeTruthy();
+    //D C I D
+    //S R E G
     //E N K R
     //H L N K
   });

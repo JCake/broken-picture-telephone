@@ -104,11 +104,14 @@
       const DIM = 4;
       let letters = "";
       function start() {
+          let letterChoices = ALL_LETTERS.slice();
         letters = "";
         for (let row = 0; row < DIM; row++) {
           for (let col = 0; col < DIM; col++) {
+            let index = Math.floor(Math.random() * letterChoices.length);
             letters +=
-              ALL_LETTERS[Math.floor(Math.random() * ALL_LETTERS.length)];
+              letterChoices[index];
+            letterChoices.splice(index, 1)
             if(!(row === DIM - 1 && col === DIM -1)){
                 letters += ',';
             }
