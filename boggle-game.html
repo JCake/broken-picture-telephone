@@ -70,6 +70,8 @@
                             });
                             document.getElementById("results-area").style.display = "block";
                             document.getElementById('your-words-after').innerHTML = '';
+                            document.getElementById('all-player-scores').innerHTML = '';
+
                             let wordsToScore = [];
                             myWords.forEach((word) => {
                                 let li = document.createElement("li");
@@ -84,8 +86,30 @@
                             });
                             const yourScore = calculateScore(wordsToScore);
                             document.getElementById("your-score").innerHTML = yourScore;
+
+                            const allScores = [{playerId: `${playerId} (YOU)`, score: yourScore}]
+                            gameResultsSnapshot.forEach((result) => {
+                                if (result.data().playerId !== playerId) {
+                                    const thisPlayerId = result.data().playerId;
+                                    const otherWordsFromThisPlayerPerspective = new Set();
+                                    let thisPlayersWords = result.data().words.split(',');
+                                    gameSnapshot.forEach((result) => {
+                                        if(result.data().playerId !== thisPlayerId){
+                                            result.data().words.split(',').forEach((word) => otherWordsFromThisPlayerPerspective.add(word));
+                                        }
+                                    });
+                                    allScores.push({playerId: thisPlayerId, score: calculateScore(thisPlayersWords.filter((word) => !othersWords.has(word)))})
+                                }
+                            });
+                            
+                            allScores.sort((a, b) => a.score - b.score).forEach((result) => {
+                                let li = document.createElement("li");
+                                li.appendChild(document.createTextNode(`${result.score} - ${result.playerId}`));
+                                document.getElementById('all-player-scores').appendChild(li);
+                            });
+
                             document.getElementById("start-button").style.display = "block";
-                            // TODO show others' scores
+                            // TODO show others' words
                         });
                 }, 1000); // naive approach - wait for all data to be saved and come back from other players
             }
@@ -265,6 +289,10 @@
 
         </ul>
         <span>Your score is:  </span><span id="your-score"></span>
+        <p>Scores in Order:</p>
+        <ol id="all-player-scores">
+
+        </ol>
     </div>
   </body>
 </html>
