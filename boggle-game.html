@@ -37,12 +37,15 @@
 
       function setUp() {
         document.getElementById("word-entry-area").style.display = "none";
+        document.getElementById("results-area").style.display = "none";
         const gamesUnsub = db
           .collection("games")
           .doc("now")
           .onSnapshot((gameSnapshot) => {
             if (gameSnapshot.data()?.currentStatus === "Started") {
+              gameId = gameSnapshot.data().gameId;
               document.getElementById("start-button").style.display = "none";
+              document.getElementById("results-area").style.display = "none";
               this.buildGrid(gameSnapshot.data().letters);
               document.getElementById("word-entry-area").style.display =
                 "block";
@@ -50,11 +53,34 @@
                 this.completeGame();
               }, 60 * 1000);
             }
-             if (gameSnapshot.data()?.currentStatus === "Complete") {
-                document.getElementById("start-button").style.display = "block";
+            if (gameSnapshot.data()?.currentStatus === "Complete" && gameId === gameSnapshot.data().gameId) {
                 document.getElementById('word-entry-area').style.display = 'none';
                 // TODO collect everyonen's entries and figure out who won
-              }
+                setTimeout(() => {
+                    db
+                        .collection(`game-${gameId}`)
+                        .get()
+                        .then((gameResultsSnapshot) => {
+                            let othersWords = new Set();
+                            gameResultsSnapshot.forEach((result) => {
+                                if(result.data().playerId !== playerId){
+                                    result.data().words.split(',').forEach((word) => othersWords.add(word));
+                                }
+                            });
+                            let wordsToScore = [];
+                            myWords.forEach((word) => {
+                                if(!othersWords.has(word)){
+                                    wordsToScore.push(word);
+                                }
+                            });
+                            const yourScore = calculateScore(wordsToScore);
+                            document.getElementById("results-area").style.display = "block";
+                            document.getElementById("results-area").innerHTML = yourScore;
+                            // TODO show others' scores
+                            document.getElementById("start-button").style.display = "block";
+                        });
+                }, 1000); // naive approach - wait for all data to be saved and come back from other players
+            }
           });
           document.getElementById('word-entry-area').addEventListener("keyup", (e) => {
               if (e.key === "Enter") {
@@ -103,6 +129,7 @@
       ];
       const DIM = 4;
       let letters = "";
+      let gameId;
       function start() {
           let letterChoices = ALL_LETTERS.slice();
         letters = "";
@@ -117,11 +144,20 @@
             }
           }
         }
-        db.collection("games").doc("now").set({
-          currentStatus: "Started",
-          time: new Date().getTime(),
-          letters,
+        db.collection("games").doc("now").get().then((lastGame) => {
+            if(!lastGame || !lastGame.data() || !lastGame.data().gameId){
+                gameId = 1;
+            } else {
+                gameId = lastGame.data().gameId + 1
+            }
+             db.collection("games").doc("now").set({
+                currentStatus: "Started",
+                time: new Date().getTime(),
+                letters,
+                gameId
+            });
         });
+
       }
 
       function buildGrid(letters) {
@@ -160,16 +196,16 @@
         }
       }
 
+      let playerId;
       function completeGame() {
         db.collection("games").doc("now").set({
               currentStatus: "Complete",
               time: new Date().getTime(),
-              letters
+              letters,
+              gameId
         });
-        // TODO send your words to the server
-
-
-
+        playerId = Math.ceil(Math.random() * 1000000);
+        db.collection(`game-${gameId}`).add({playerId, words: myWords.join(',')})
       }
     </script>
 
@@ -215,6 +251,9 @@
       <ul id="your-words">
 
       </ul>
+    </div>
+    <div id="results-area">
+        <span>Your score is:  </span><span id="your-score"></span>
     </div>
   </body>
 </html>

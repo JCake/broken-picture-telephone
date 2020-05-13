@@ -80,3 +80,10 @@ function connected(index1, index2, dimension) {
       (index1 + index2) % dimension !== dimension - 1)
   );
 }
+
+function calculateScore(wordsToScore) {
+  return wordsToScore
+    .filter((word) => word.length >= 3)
+    .map((word) => Math.min(word.length - 2, 6))
+    .reduce((a, b) => a + b, 0);
+}

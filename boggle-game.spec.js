@@ -116,3 +116,23 @@ describe("validateFitsOnBoard", () => {
 
   // TODO add hanlding of QU
 });
+
+describe("calculateScore", () => {
+  it("should give 1 pt per 3 letter word", () => {
+    expect(calculateScore(["cat", "dog", "pet"])).toEqual(3);
+  });
+  it("should ignore words less than 3 letters long", () => {
+    expect(calculateScore(["cat", "dog", "do", "a", "me", "pet"])).toEqual(3);
+  });
+  it("should score 2 pts for each 4 letter word", () => {
+    expect(calculateScore(["cat", "dog", "fish"])).toEqual(4);
+  });
+
+  it("should score more points per word for longer words", () => {
+    expect(calculateScore(["cat", "fish", "purrs", "catfish"])).toEqual(11);
+    // cat = 1, fish = 2, purrs = 3, catfish = 5
+  });
+  it("should max out at 6 points for a word", () => {
+    expect(calculateScore(["catfishing"])).toEqual(6);
+  });
+});
