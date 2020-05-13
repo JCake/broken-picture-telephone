@@ -17,6 +17,7 @@
     <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-storage.js"></script>
 
+    <script src="common-words.js"></script>
     <script src="boggle-game.js"></script>
 
     <script>
@@ -156,12 +157,13 @@
       }
 
       function completeGame() {
-          // TODO figure out who won by counting words each person had that no one else did
         db.collection("games").doc("now").set({
               currentStatus: "Complete",
               time: new Date().getTime(),
               letters
         });
+        // TODO send your words to the server
+
 
 
       }

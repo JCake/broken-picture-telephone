@@ -1,6 +1,17 @@
 function validateEnglishWord(potentialWord) {
-  // TODO implement
-  return true;
+  if (COMMON_WORDS.indexOf(potentialWord.toLowerCase()) > -1) {
+    return true;
+  } else {
+    const xmlHttp = new XMLHttpRequest();
+    xmlHttp.open(
+      "GET",
+      `https://unpkg.com/an-array-of-english-words@2.0.0/index.json`,
+      false
+    ); // false for synchronous request
+    xmlHttp.send(null);
+    const reply = xmlHttp.responseText;
+    return reply.includes(`"${potentialWord.toLowerCase()}"`);
+  }
 }
 
 function validateFitsOnBoard(potentialWord, letters) {
