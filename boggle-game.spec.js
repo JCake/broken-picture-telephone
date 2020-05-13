@@ -81,5 +81,15 @@ describe("validateFitsOnBoard", () => {
     // B U X S
   });
 
+  it("should return true for word in a corner", () => {
+    expect(
+      validateFitsOnBoard("NIT", "S,C,I,N,S,R,Y,T,E,N,K,R,H,L,N,K")
+    ).toBeTruthy();
+    //S C I N
+    //S R Y T
+    //E N K R
+    //H L N K
+  });
+
   // TODO add hanlding of QU
 });

@@ -15,7 +15,8 @@ function validateEnglishWord(potentialWord) {
 }
 
 function validateFitsOnBoard(potentialWord, letters) {
-  // TODO implement
+  console.log(potentialWord);
+  console.log(letters);
   const lettersOfWord = potentialWord.split("");
   const allLetters = letters.split(",");
   const dimension = Math.floor(Math.sqrt(allLetters.length));

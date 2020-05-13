@@ -135,6 +135,7 @@
 
       let myWords = [];
       function submit() {
+          document.getElementById('error-msg').innerHTML = '';
         const potentialWord = document.getElementById('word-entry').value.toUpperCase();
         if(myWords.indexOf(potentialWord) > -1) {
             document.getElementById('error-msg').innerHTML = 'Already entered';
