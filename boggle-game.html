@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+    />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Broken Picture Telephone</title>
+
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-app.js"></script>
+
+    <!-- TODO: Add SDKs for Firebase products that you want to use
+         https://firebase.google.com/docs/web/setup#available-libraries -->
+    <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/7.14.2/firebase-storage.js"></script>
+
+    <script>
+      // Your web app's Firebase configuration
+      var firebaseConfig = {
+        apiKey: "AIzaSyAlfRzco7yfWmJYzMr2rjfkQ5VLFVOOBOw",
+        authDomain: "boggle-9d99c.firebaseapp.com",
+        databaseURL: "https://boggle-9d99c.firebaseio.com",
+        projectId: "boggle-9d99c",
+        storageBucket: "boggle-9d99c.appspot.com",
+        messagingSenderId: "653571429617",
+        appId: "1:653571429617:web:b83750a5482faaee044550",
+      };
+      // Initialize Firebase
+      firebase.initializeApp(firebaseConfig);
+      const db = firebase.firestore();
+
+      function setUp() {
+        document.getElementById("word-entry-area").style.display = "none";
+        const gamesUnsub = db
+          .collection("games")
+          .doc("now")
+          .onSnapshot((gameSnapshot) => {
+            if (gameSnapshot.data()?.currentStatus === "Started") {
+              document.getElementById("start-button").style.display = "none";
+              this.buildGrid(gameSnapshot.data().letters);
+              document.getElementById("word-entry-area").style.display =
+                "block";
+              setTimeout(() => {
+                this.completeGame();
+              }, 60 * 1000);
+            }
+             if (gameSnapshot.data()?.currentStatus === "Complete") {
+                document.getElementById("start-button").style.display = "block";
+                document.getElementById('word-entry-area').style.display = 'none';
+                // TODO collect everyonen's entries and figure out who won
+              }
+          });
+          document.getElementById('word-entry-area').addEventListener("keyup", (e) => {
+              if (e.key === "Enter") {
+                  this.submit();
+              }
+          });
+      }
+
+      const ALL_LETTERS = [
+        "A",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "E",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "I",
+        "J",
+        "K",
+        "L",
+        "L",
+        "M",
+        "N",
+        "N",
+        "O",
+        "O",
+        "P",
+        "QU",
+        "R",
+        "R",
+        "S",
+        "S",
+        "T",
+        "T",
+        "U",
+        "V",
+        "W",
+        "X",
+        "Y",
+        "Z",
+      ];
+      const DIM = 4;
+      let letters = "";
+      function start() {
+        letters = "";
+        for (let row = 0; row < DIM; row++) {
+          for (let col = 0; col < DIM; col++) {
+            letters +=
+              ALL_LETTERS[Math.floor(Math.random() * ALL_LETTERS.length)];
+            if(!(row === DIM - 1 && col === DIM -1)){
+                letters += ',';
+            }
+          }
+        }
+        db.collection("games").doc("now").set({
+          currentStatus: "Started",
+          time: new Date().getTime(),
+          letters,
+        });
+      }
+
+      function buildGrid(letters) {
+        const letterArray = letters.split(",");
+        let arrayIndex = 0;
+        for (let row = 0; row < DIM; row++) {
+          for (let col = 0; col < DIM; col++) {
+            document.getElementById(`tile-${row}${col}`).innerHTML =
+              letterArray[arrayIndex];
+            arrayIndex++;
+          }
+        }
+      }
+
+      let myWords = [];
+      function submit() {
+        const potentialWord = document.getElementById('word-entry').value.toUpperCase();
+        if(myWords.indexOf(potentialWord) > -1) {
+            document.getElementById('error-msg').innerHTML = 'Already entered';
+        }
+        else if(validateEnglishWord(potentialWord)){
+            if(validateFitsOnBoard(potentialWord, letters)){
+                myWords.push(potentialWord);
+                // https://memorynotfound.com/dynamically-addremove-items-list-javascript/
+                let li = document.createElement("li");
+                li.appendChild(document.createTextNode(potentialWord));
+                document.getElementById('your-words').appendChild(li);
+                document.getElementById('word-entry').value = '';
+                document.getElementById('word-entry').focus = true;
+            } else {
+                document.getElementById('error-msg').innerHTML = 'Not valid with given tiles';
+            }
+        } else {
+            document.getElementById('error-msg').innerHTML = 'Not a valid word';
+        }
+      }
+
+      function validateEnglishWord(potentialWord){
+          // TODO implement
+        return true;
+      }
+
+      function validateFitsOnBoard(potentialWord, letters){
+          // TODO implement
+        return true;
+      }
+
+      function completeGame() {
+          // TODO figure out who won by counting words each person had that no one else did
+        db.collection("games").doc("now").set({
+              currentStatus: "Complete",
+              time: new Date().getTime(),
+              letters
+        });
+
+
+      }
+    </script>
+
+    <link href="boggle-game.css" rel="stylesheet" type="text/css"></script>
+  </head>
+  <body onload="setUp()">
+    <button onclick="start()" id="start-button">New Game</button>
+    <div id="boggle-board">
+      <div class="board-row">
+        <span id="tile-00" class="tile"></span>
+        <span id="tile-01" class="tile"></span>
+        <span id="tile-02" class="tile"></span>
+        <span id="tile-03" class="tile"></span>
+      </div>
+      <div class="board-row">
+        <span id="tile-10" class="tile"></span>
+        <span id="tile-11" class="tile"></span>
+        <span id="tile-12" class="tile"></span>
+        <span id="tile-13" class="tile"></span>
+      </div>
+      <div class="board-row">
+        <span id="tile-20" class="tile"></span>
+        <span id="tile-21" class="tile"></span>
+        <span id="tile-22" class="tile"></span>
+        <span id="tile-23" class="tile"></span>
+      </div>
+      <div class="board-row">
+        <span id="tile-30" class="tile"></span>
+        <span id="tile-31" class="tile"></span>
+        <span id="tile-32" class="tile"></span>
+        <span id="tile-33" class="tile"></span>
+      </div>
+    </div>
+
+    <div id="word-entry-area">
+      <div>Type a word formed with connected tiles:</div>
+      <input type="text" id="word-entry" autofocus/>
+      <span id="error-msg" style="color: red"></span>
+      <button onclick="submit()" id="submitButton">Submit</button>
+      <div>
+          Words you have entered:
+      </div>
+      <ul id="your-words">
+
+      </ul>
+    </div>
+  </body>
+</html>
