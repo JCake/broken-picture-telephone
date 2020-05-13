@@ -47,6 +47,7 @@
               document.getElementById("start-button").style.display = "none";
               document.getElementById("results-area").style.display = "none";
               this.buildGrid(gameSnapshot.data().letters);
+              letters = gameSnapshot.data().letters;
               document.getElementById("word-entry-area").style.display =
                 "block";
               setTimeout(() => {
