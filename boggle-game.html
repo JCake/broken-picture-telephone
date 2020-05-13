@@ -71,7 +71,7 @@
                             let wordsToScore = [];
                             myWords.forEach((word) => {
                                 let li = document.createElement("li");
-                                li.appendChild(document.createTextNode(potentialWord));
+                                li.appendChild(document.createTextNode(word));
                                 if(othersWords.has(word)){
                                     li.style['text-decoration'] = 'line-through';
                                 }
