@@ -105,7 +105,7 @@
                                 }
                             });
                             
-                            allScores.sort((a, b) => a.score - b.score).forEach((result) => {
+                            allScores.sort((a, b) => b.score - a.score).forEach((result) => {
                                 let li = document.createElement("li");
                                 li.appendChild(document.createTextNode(`${result.score} - ${result.playerId}`));
                                 document.getElementById('all-player-scores').appendChild(li);
