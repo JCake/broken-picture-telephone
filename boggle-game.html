@@ -65,11 +65,15 @@
                         .collection(`game-${gameId}`)
                         .get()
                         .then((gameResultsSnapshot) => {
-                            let othersWords = new Set();
+                            let wordsToPlayers = new HashSet();
                             gameResultsSnapshot.forEach((result) => {
-                                if(result.data().playerId !== playerId){
-                                    result.data().words.split(',').forEach((word) => othersWords.add(word));
-                                }
+                                result.data().words.split(',').forEach((word) => {
+                                    if(wordsToPlayers.has(word)){
+                                        wordsToPlayers.get(word).push(result.data().playerId);
+                                    } else {
+                                        wordsToPlayers.set(word, [result.data().playerId]);
+                                    }
+                                });
                             });
                             document.getElementById("results-area").style.display = "block";
                             document.getElementById('your-words-after').innerHTML = '';
@@ -79,7 +83,7 @@
                             myWords.forEach((word) => {
                                 let li = document.createElement("li");
                                 li.appendChild(document.createTextNode(word));
-                                if(othersWords.has(word)){
+                                if(wordsToPlayers.get(word).length > 1){
                                     li.style['text-decoration'] = 'line-through';
                                 }
                                 else{
@@ -94,14 +98,9 @@
                             gameResultsSnapshot.forEach((result) => {
                                 if (result.data().playerId !== playerId) {
                                     const thisPlayerId = result.data().playerId;
-                                    const otherWordsFromThisPlayerPerspective = new Set();
-                                    let thisPlayersWords = result.data().words.split(',');
-                                    gameResultsSnapshot.forEach((result) => {
-                                        if(result.data().playerId !== thisPlayerId){
-                                            result.data().words.split(',').forEach((word) => otherWordsFromThisPlayerPerspective.add(word));
-                                        }
-                                    });
-                                    allScores.push({playerId: thisPlayerId, score: calculateScore(thisPlayersWords.filter((word) => !othersWords.has(word)))})
+                                    const thisPlayersWords = result.data().words.split(',');
+                                    const thisPlayerScore = calculateScore(thisPlayersWords.filter((word) => wordsToPlayers.get(word).length === 1));
+                                    allScores.push({playerId: thisPlayerId, score: thisPlayerScore});
                                 }
                             });
                             
