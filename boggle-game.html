@@ -172,7 +172,7 @@
           document.getElementById('error-msg').innerHTML = '';
         const potentialWord = document.getElementById('word-entry').value.toUpperCase();
         if(myWords.indexOf(potentialWord) > -1) {
-            document.getElementById('error-msg').innerHTML = 'Already entered';
+            document.getElementById('error-msg').innerHTML = `You already entered ${potentialWord}`;
         }
         else if(validateEnglishWord(potentialWord)){
             if(validateFitsOnBoard(potentialWord, letters)){
@@ -181,14 +181,14 @@
                 let li = document.createElement("li");
                 li.appendChild(document.createTextNode(potentialWord));
                 document.getElementById('your-words').appendChild(li);
-                document.getElementById('word-entry').value = '';
-                document.getElementById('word-entry').focus = true;
             } else {
-                document.getElementById('error-msg').innerHTML = 'Not valid with given tiles';
+                document.getElementById('error-msg').innerHTML = `${potentialWord} is not valid with given tiles`;
             }
         } else {
-            document.getElementById('error-msg').innerHTML = 'Not a valid word';
+            document.getElementById('error-msg').innerHTML = `${potentialWord} is not a valid word`;
         }
+        document.getElementById('word-entry').value = '';
+        document.getElementById('word-entry').focus = true;
       }
 
       let playerId;
