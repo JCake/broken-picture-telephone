@@ -43,6 +43,9 @@
           .doc("now")
           .onSnapshot((gameSnapshot) => {
             if (gameSnapshot.data()?.currentStatus === "Started") {
+              playerId = document.getElementById('player-name').value || Math.ceil(Math.random() * 1000000);
+              document.getElementById('player-name').value = playerId;
+              document.getElementById('player-name').setAttribute('readonly', true);
               gameId = gameSnapshot.data().gameId;
               document.getElementById("start-button").style.display = "none";
               document.getElementById("results-area").style.display = "none";
@@ -93,7 +96,7 @@
                                     const thisPlayerId = result.data().playerId;
                                     const otherWordsFromThisPlayerPerspective = new Set();
                                     let thisPlayersWords = result.data().words.split(',');
-                                    gameSnapshot.forEach((result) => {
+                                    gameResultsSnapshot.forEach((result) => {
                                         if(result.data().playerId !== thisPlayerId){
                                             result.data().words.split(',').forEach((word) => otherWordsFromThisPlayerPerspective.add(word));
                                         }
@@ -108,6 +111,8 @@
                                 document.getElementById('all-player-scores').appendChild(li);
                             });
 
+                            document.getElementById('player-name').value = playerId;
+                            document.getElementById('player-name').removeAttribute('readonly');
                             document.getElementById("start-button").style.display = "block";
                             // TODO show others' words
                         });
@@ -236,7 +241,6 @@
               letters,
               gameId
         });
-        playerId = Math.ceil(Math.random() * 1000000);
         db.collection(`game-${gameId}`).add({playerId, words: myWords.join(',')})
       }
     </script>
@@ -244,6 +248,8 @@
     <link href="boggle-game.css" rel="stylesheet" type="text/css"></script>
   </head>
   <body onload="setUp()">
+    <label>Your Name:</label><input id="player-name" type="text"/>
+    <p></p>
     <button onclick="start()" id="start-button">New Game</button>
     <div id="boggle-board">
       <div class="board-row">
