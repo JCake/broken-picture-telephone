@@ -42,7 +42,7 @@
           .collection("games")
           .doc("now")
           .onSnapshot((gameSnapshot) => {
-            if (gameSnapshot.data()?.currentStatus === "Started") {
+            if (gameSnapshot.data() && gameSnapshot.data().currentStatus === "Started") {
               playerId = document.getElementById('player-name').value || Math.ceil(Math.random() * 1000000);
               document.getElementById('player-name').value = playerId;
               document.getElementById('player-name').setAttribute('readonly', true);
@@ -61,7 +61,7 @@
                 this.completeGame();
               }, 60 * 1000);
             }
-            if (gameSnapshot.data()?.currentStatus === "Complete" && gameId === gameSnapshot.data().gameId) {
+            if (gameSnapshot.data() && gameSnapshot.data().currentStatus === "Complete" && gameId === gameSnapshot.data().gameId) {
                 document.getElementById('word-entry-area').style.display = 'none';
                     db.collection(`game-${gameId}`)
                         .get()
