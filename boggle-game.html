@@ -195,16 +195,19 @@
       let otherCompletionsFound = 0;
       function completeGame() {
         otherCompletionsFound = 0;
+        db.collection(`game-${gameId}`).add({playerId, words: myWords.join(',')});
         db.collection("games").doc("now").set({
-              currentStatus: "Complete",
-              time: new Date().getTime(),
-              letters,
-              gameId
+            currentStatus: "Complete",
+            time: new Date().getTime(),
+            letters,
+            gameId
         });
-        db.collection(`game-${gameId}`).add({playerId, words: myWords.join(',')})
+        document.getElementById("results-area").style.display = "block";
+        document.getElementById('results-message').innerHTML = 'Calculating scores...';
       }
 
       function buildResultsPage(gameResultsSnapshot) {
+          document.getElementById('results-message').innerHTML = 'Calculating scores...';
           let wordsToPlayers = new Map();
           gameResultsSnapshot.forEach((result) => {
               result.data().words.split(',').forEach((word) => {
@@ -259,6 +262,8 @@
           }
           );
 
+          document.getElementById('results-message').innerHTML = '';
+
           document.getElementById('player-name').value = playerId;
           document.getElementById('player-name').removeAttribute('readonly');
           document.getElementById("start-button").style.display = "block";
@@ -312,6 +317,7 @@
       </ul>
     </div>
     <div id="results-area">
+        <p id="results-message"></p>
         <ul id="your-words-after">
 
         </ul>
