@@ -65,7 +65,7 @@
                         .collection(`game-${gameId}`)
                         .get()
                         .then((gameResultsSnapshot) => {
-                            let wordsToPlayers = new Set();
+                            let wordsToPlayers = new Map();
                             gameResultsSnapshot.forEach((result) => {
                                 result.data().words.split(',').forEach((word) => {
                                     if(wordsToPlayers.has(word)){
