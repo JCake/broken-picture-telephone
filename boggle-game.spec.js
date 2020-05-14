@@ -114,7 +114,15 @@ describe("validateFitsOnBoard", () => {
     //H L N K
   });
 
-  // TODO add hanlding of QU
+  it("should not let you use the same tile more than once", () => {
+    expect(
+      validateFitsOnBoard("DID", "D,C,I,D,S,R,E,G,E,N,K,R,H,L,N,K")
+    ).toBeFalsy();
+    //D C I D
+    //S R E G
+    //E N K R
+    //H L N K
+  });
 });
 
 describe("calculateScore", () => {

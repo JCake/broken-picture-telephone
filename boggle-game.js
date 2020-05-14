@@ -48,7 +48,11 @@ function validateFitsOnBoard(potentialWord, letters) {
     });
     let chainWorks = false;
     possibleIndexChains.forEach((possibleIndexChain) => {
-      if (checkIndexChain(possibleIndexChain, dimension)) {
+      const uniqueIndices = new Set(possibleIndexChain);
+      if (
+        uniqueIndices.size === possibleIndexChain.length &&
+        checkIndexChain(possibleIndexChain, dimension)
+      ) {
         chainWorks = true;
         return; // from forEach
       }
