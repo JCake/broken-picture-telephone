@@ -88,7 +88,7 @@
                             myWords.forEach((word) => {
                                 let li = document.createElement("li");
                                 li.appendChild(document.createTextNode(word));
-                                if(wordsToPlayers.get(word).length > 1){
+                                if(wordsToPlayers.get(word) && wordsToPlayers.get(word).length > 1){
                                     li.style['text-decoration'] = 'line-through';
                                 }
                                 else{
