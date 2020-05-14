@@ -51,10 +51,12 @@
               document.getElementById("results-area").style.display = "none";
               this.buildGrid(gameSnapshot.data().letters);
               letters = gameSnapshot.data().letters;
-              document.getElementById('your-words').innerHTML = '';
               myWords = [];
               document.getElementById("word-entry-area").style.display =
                 "block";
+              document.getElementById('your-words').innerHTML = '';
+              document.getElementById('word-entry').value = '';
+              document.getElementById('error-msg').innerHTML = '';
               setTimeout(() => {
                 this.completeGame();
               }, 60 * 1000);
