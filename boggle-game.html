@@ -82,6 +82,17 @@
                   this.submit();
               }
           });
+          // make tiles clickable:
+          for (let row = 0; row < DIM; row++) {
+              for (let col = 0; col < DIM; col++) {
+                  document.getElementById(`tile-${row}${col}`).addEventListener('click', (e) => {
+                      const letterValue = document.getElementById(`tile-${row}${col}`).innerHTML.trim();
+                      if (letterValue) {
+                          document.getElementById('word-entry').value += letterValue;
+                      }
+                  });
+              }
+          }
       }
 
       const ALL_LETTERS = [

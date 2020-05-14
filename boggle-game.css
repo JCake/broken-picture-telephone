@@ -1,19 +1,25 @@
 #boggle-board {
   font-family: monospace;
   border: solid 1px gray;
-  max-width: 120px;
+  max-width: 240px;
   padding: 4px;
 }
 .board-row {
-  margin-top: 2px;
-  margin-bottom: 2px;
+  margin: 4px;
 }
 .tile {
   border: solid 1px gray;
-  padding: 1px;
-  padding-left: 2px;
-  width: 18px;
-  height: 18px;
-  font-size: 12pt;
+  margin: 2px;
+  padding: 6px;
+  padding-left: 10px;
+  width: 28px;
+  height: 28px;
+  font-size: 14pt;
   display: inline-block;
+}
+
+button {
+  font-size: 14pt;
+  margin: 8px;
+  margin-bottom: 12px;
 }
