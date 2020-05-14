@@ -63,69 +63,18 @@
             }
             if (gameSnapshot.data()?.currentStatus === "Complete" && gameId === gameSnapshot.data().gameId) {
                 document.getElementById('word-entry-area').style.display = 'none';
-                // TODO collect everyonen's entries and figure out who won
-                setTimeout(() => {
-                    db
-                        .collection(`game-${gameId}`)
+                    db.collection(`game-${gameId}`)
                         .get()
                         .then((gameResultsSnapshot) => {
-                            let wordsToPlayers = new Map();
-                            gameResultsSnapshot.forEach((result) => {
-                                result.data().words.split(',').forEach((word) => {
-                                    if(wordsToPlayers.has(word)){
-                                        wordsToPlayers.get(word).push(result.data().playerId);
-                                    } else {
-                                        wordsToPlayers.set(word, [result.data().playerId]);
-                                    }
-                                });
-                            });
-                            document.getElementById("results-area").style.display = "block";
-                            document.getElementById('your-words-after').innerHTML = '';
-                            document.getElementById('all-player-scores').innerHTML = '';
-                            document.getElementById('all-words').innerHTML = '';
-
-                            let wordsToScore = [];
-                            myWords.forEach((word) => {
-                                let li = document.createElement("li");
-                                li.appendChild(document.createTextNode(word));
-                                if(wordsToPlayers.get(word) && wordsToPlayers.get(word).length > 1){
-                                    li.style['text-decoration'] = 'line-through';
+                            let snapshotOfCompletionsFound = ++otherCompletionsFound;
+                            // hacked debounce:
+                            setTimeout(() => {
+                                if(snapshotOfCompletionsFound === otherCompletionsFound){
+                                    // No new completions since this one:
+                                    this.buildResultsPage(gameResultsSnapshot);
                                 }
-                                else{
-                                    wordsToScore.push(word);
-                                }
-                                document.getElementById('your-words-after').appendChild(li);
-                            });
-                            const yourScore = calculateScore(wordsToScore);
-                            document.getElementById("your-score").innerHTML = yourScore;
-
-                            const allScores = [{playerId: `${playerId} (YOU)`, score: yourScore}]
-                            gameResultsSnapshot.forEach((result) => {
-                                if (result.data().playerId !== playerId) {
-                                    const thisPlayerId = result.data().playerId;
-                                    const thisPlayersWords = result.data().words.split(',');
-                                    const thisPlayerScore = calculateScore(thisPlayersWords.filter((word) => wordsToPlayers.get(word).length === 1));
-                                    allScores.push({playerId: thisPlayerId, score: thisPlayerScore});
-                                }
-                            });           
-                            allScores.sort((a, b) => b.score - a.score).forEach((result) => {
-                                let li = document.createElement("li");
-                                li.appendChild(document.createTextNode(`${result.score} - ${result.playerId}`));
-                                document.getElementById('all-player-scores').appendChild(li);
-                            });
-
-                            wordsToPlayers.forEach((value, key) => {
-                                let li = document.createElement("li");
-                                li.appendChild(document.createTextNode(`${key} found by ${value}`));
-                                document.getElementById('all-words').appendChild(li);}
-                            );
-
-                            document.getElementById('player-name').value = playerId;
-                            document.getElementById('player-name').removeAttribute('readonly');
-                            document.getElementById("start-button").style.display = "block";
-                            // TODO show others' words
+                            }, 250);   
                         });
-                }, 1000); // naive approach - wait for all data to be saved and come back from other players
             }
           });
           document.getElementById('word-entry-area').addEventListener("keyup", (e) => {
@@ -243,7 +192,9 @@
       }
 
       let playerId;
+      let otherCompletionsFound = 0;
       function completeGame() {
+        otherCompletionsFound = 0;
         db.collection("games").doc("now").set({
               currentStatus: "Complete",
               time: new Date().getTime(),
@@ -252,6 +203,67 @@
         });
         db.collection(`game-${gameId}`).add({playerId, words: myWords.join(',')})
       }
+
+      function buildResultsPage(gameResultsSnapshot) {
+          let wordsToPlayers = new Map();
+          gameResultsSnapshot.forEach((result) => {
+              result.data().words.split(',').forEach((word) => {
+                  if(word){
+                      if (wordsToPlayers.has(word)) {
+                          wordsToPlayers.get(word).push(result.data().playerId);
+                      } else {
+                          wordsToPlayers.set(word, [result.data().playerId]);
+                      }
+                  }
+              });
+          });
+          document.getElementById("results-area").style.display = "block";
+          document.getElementById('your-words-after').innerHTML = '';
+          document.getElementById('all-player-scores').innerHTML = '';
+          document.getElementById('all-words').innerHTML = '';
+
+          let wordsToScore = [];
+          myWords.forEach((word) => {
+              let li = document.createElement("li");
+              li.appendChild(document.createTextNode(word));
+              if (wordsToPlayers.get(word) && wordsToPlayers.get(word).length > 1) {
+                  li.style['text-decoration'] = 'line-through';
+              }
+              else {
+                  wordsToScore.push(word);
+              }
+              document.getElementById('your-words-after').appendChild(li);
+          });
+          const yourScore = calculateScore(wordsToScore);
+          document.getElementById("your-score").innerHTML = yourScore;
+
+          const allScores = [{ playerId: `${playerId} (YOU)`, score: yourScore }]
+          gameResultsSnapshot.forEach((result) => {
+              if (result.data().playerId !== playerId) {
+                  const thisPlayerId = result.data().playerId;
+                  const thisPlayersWords = result.data().words.split(',');
+                  const thisPlayerScore = calculateScore(thisPlayersWords.filter((word) => wordsToPlayers.get(word).length === 1));
+                  allScores.push({ playerId: thisPlayerId, score: thisPlayerScore });
+              }
+          });
+          allScores.sort((a, b) => b.score - a.score).forEach((result) => {
+              let li = document.createElement("li");
+              li.appendChild(document.createTextNode(`${result.score} - ${result.playerId}`));
+              document.getElementById('all-player-scores').appendChild(li);
+          });
+
+          wordsToPlayers.forEach((value, key) => {
+              let li = document.createElement("li");
+              li.appendChild(document.createTextNode(`${key} found by ${value}`));
+              document.getElementById('all-words').appendChild(li);
+          }
+          );
+
+          document.getElementById('player-name').value = playerId;
+          document.getElementById('player-name').removeAttribute('readonly');
+          document.getElementById("start-button").style.display = "block";
+      }
+
     </script>
 
     <link href="boggle-game.css" rel="stylesheet" type="text/css"></script>
