@@ -47,7 +47,7 @@
               document.getElementById('player-name').value = playerId;
               document.getElementById('player-name').setAttribute('readonly', true);
               gameId = gameSnapshot.data().gameId;
-              document.getElementById("start-button").style.display = "none";
+              document.getElementById("start-button").style.visibility = "hidden";
               document.getElementById("results-area").style.display = "none";
               this.buildGrid(gameSnapshot.data().letters);
               letters = gameSnapshot.data().letters;
@@ -223,8 +223,11 @@
           gameResultsSnapshot.forEach((result) => {
               result.data().words.split(',').forEach((word) => {
                   if(word){
+                      const player = result.data().playerId;
                       if (wordsToPlayers.has(word)) {
-                          wordsToPlayers.get(word).push(result.data().playerId);
+                          if(wordsToPlayers.get(word).indexOf(player) === -1){
+                              wordsToPlayers.get(word).push(result.data().playerId);
+                          }
                       } else {
                           wordsToPlayers.set(word, [result.data().playerId]);
                       }
@@ -253,7 +256,8 @@
 
           const allScores = [{ playerId: `${playerId} (YOU)`, score: yourScore }]
           gameResultsSnapshot.forEach((result) => {
-              if (result.data().playerId !== playerId) {
+              // NOTE Would be good to figure out why/how duplicate scores can come through, but here is a workaround:
+              if (result.data().playerId !== playerId && !allScores.find((score) => playerId === score.playerId)) {
                   const thisPlayerId = result.data().playerId;
                   const thisPlayersWords = result.data().words.split(',');
                   const thisPlayerScore = calculateScore(thisPlayersWords.filter((word) =>  wordsToPlayers.get(word) && wordsToPlayers.get(word).length === 1));
@@ -277,7 +281,7 @@
 
           document.getElementById('player-name').value = playerId;
           document.getElementById('player-name').removeAttribute('readonly');
-          document.getElementById("start-button").style.display = "block";
+          document.getElementById("start-button").style.visibility = "visible";
       }
 
     </script>
