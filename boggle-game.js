@@ -91,3 +91,53 @@ function calculateScore(wordsToScore) {
     .map((word) => Math.min(word.length - 2, 6))
     .reduce((a, b) => a + b, 0);
 }
+
+function findAllBasicValidWords(letters) {
+  const wordsFound = new Set();
+  const startingLetters = findAdjacentLetterPairs(letters);
+  startingLetters.forEach((starting) => {
+    let possibleWords = GROUPED_COMMON_WORDS.get(starting);
+    if (possibleWords) {
+      possibleWords.forEach((possibleWord) => {
+        if (validateFitsOnBoard(possibleWord, letters)) {
+          wordsFound.add(possibleWord);
+        }
+      });
+    }
+  });
+  return Array.from(wordsFound).sort();
+}
+
+function findAdjacentLetterPairs(letters) {
+  const allLetters = letters.split(",");
+  const dimension = Math.floor(Math.sqrt(allLetters.length));
+  const letterPairs = new Set();
+  for (let i = 0; i < allLetters.length; i++) {
+    if (i % dimension < dimension - 1) {
+      letterPairs.add(allLetters[i] + allLetters[i + 1]);
+    }
+    if (i % dimension > 0) {
+      letterPairs.add(allLetters[i] + allLetters[i - 1]);
+    }
+    if (i < allLetters.length - dimension) {
+      letterPairs.add(allLetters[i] + allLetters[i + dimension]);
+      if (i % dimension < dimension - 1) {
+        letterPairs.add(allLetters[i] + allLetters[i + dimension + 1]);
+      }
+      if (i % dimension > 0) {
+        letterPairs.add(allLetters[i] + allLetters[i + dimension - 1]);
+      }
+    }
+    if (i >= dimension) {
+      letterPairs.add(allLetters[i] + allLetters[i - dimension]);
+      if (i % dimension < dimension - 1) {
+        letterPairs.add(allLetters[i] + allLetters[i - dimension + 1]);
+      }
+      if (i % dimension > 0) {
+        letterPairs.add(allLetters[i] + allLetters[i - dimension - 1]);
+      }
+    }
+  }
+  console.log(letterPairs);
+  return letterPairs;
+}

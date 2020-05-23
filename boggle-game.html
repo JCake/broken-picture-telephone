@@ -217,9 +217,10 @@
         document.getElementById('results-message').innerHTML = 'Calculating scores...';
       }
 
+      let wordsToPlayers = new Map();
       function buildResultsPage(gameResultsSnapshot) {
           document.getElementById('results-message').innerHTML = 'Calculating scores...';
-          let wordsToPlayers = new Map();
+          wordsToPlayers = new Map();
           gameResultsSnapshot.forEach((result) => {
               result.data().words.split(',').forEach((word) => {
                   if(word){
@@ -235,6 +236,7 @@
               });
           });
           document.getElementById("results-area").style.display = "block";
+          document.getElementById('additional-words').innerHTML = '';
           document.getElementById('your-words-after').innerHTML = '';
           document.getElementById('all-player-scores').innerHTML = '';
           document.getElementById('all-words').innerHTML = '';
@@ -282,6 +284,18 @@
           document.getElementById('player-name').value = playerId;
           document.getElementById('player-name').removeAttribute('readonly');
           document.getElementById("start-button").style.visibility = "visible";
+      }
+
+      function findAdditionalWords(){
+          document.getElementById('additional-words').innerHTML = '';
+          const wordsComputerFound = findAllBasicValidWords(letters);
+          wordsComputerFound.forEach((word) => {
+              if(!wordsToPlayers.has(word)){
+                  let li = document.createElement("li");
+                  li.appendChild(document.createTextNode(`${word}`));
+                  document.getElementById('additional-words').appendChild(li);
+              }
+          });
       }
 
     </script>
@@ -345,6 +359,11 @@
         <ul id="all-words">
 
         </ul>
+        <p>Some additional words no one found:</p>
+        <ul id="additional-words">
+
+        </ul>
+        <button onclick="findAdditionalWords()">Click to find additional words</button>
     </div>
   </body>
 </html>

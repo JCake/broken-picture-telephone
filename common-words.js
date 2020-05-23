@@ -2998,3 +2998,19 @@ const COMMON_WORDS = [
   "writer",
   "yellow",
 ];
+
+const GROUPED_COMMON_WORDS = new Map();
+
+COMMON_WORDS.forEach((word) => {
+  if (word.length > 2) {
+    word = word.toUpperCase();
+    let firstTwoLetters = word.startsWith("QU")
+      ? word.substr(0, 3)
+      : word.substr(0, 2);
+    if (GROUPED_COMMON_WORDS.has(firstTwoLetters)) {
+      GROUPED_COMMON_WORDS.get(firstTwoLetters).push(word);
+    } else {
+      GROUPED_COMMON_WORDS.set(firstTwoLetters, [word]);
+    }
+  }
+});
