@@ -123,6 +123,26 @@ describe("validateFitsOnBoard", () => {
     //E N K R
     //H L N K
   });
+
+  it("should not wrap around the board", () => {
+    expect(
+      validateFitsOnBoard("ARENA", "N,A,V,E,U,G,A,R,W,F,O,T,K,I,QU,S")
+    ).toBeFalsy();
+    //N A V E
+    //U G A R
+    //W F O T
+    //K I QU S
+  });
+
+  it("should not wrap around the board again", () => {
+    expect(
+      validateFitsOnBoard("ARK", "N,A,V,E,U,G,A,R,W,F,O,T,K,I,QU,S")
+    ).toBeFalsy();
+    //N A V E
+    //U G A R
+    //W F O T
+    //K I QU S
+  });
 });
 
 describe("calculateScore", () => {

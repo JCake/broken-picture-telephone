@@ -80,7 +80,7 @@ function connected(index1, index2, dimension) {
       Math.abs(index1 - index2) === dimension - 1 ||
       Math.abs(index1 - index2) === dimension + 1 ||
       Math.abs(index1 - index2) === dimension) &&
-    (index1 % dimension !== 0 ||
+    ((index1 % dimension !== 0 && index2 % dimension !== 0) ||
       (index1 + index2) % dimension !== dimension - 1)
   );
 }
