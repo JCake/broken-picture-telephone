@@ -279,7 +279,7 @@
           }
           );
 
-          document.getElementById('results-message').innerHTML = '';
+          document.getElementById('results-message').innerHTML = 'Your words:';
 
           document.getElementById('player-name').value = playerId;
           document.getElementById('player-name').removeAttribute('readonly');
@@ -346,24 +346,28 @@
       </ul>
     </div>
     <div id="results-area">
-        <p id="results-message"></p>
-        <ul id="your-words-after">
+        <div style="display: inline-block; padding-right: 16px;">
+            <p id="results-message"></p>
+            <ul id="your-words-after">
 
-        </ul>
-        <span>Your score is:  </span><span id="your-score"></span>
-        <p>Scores in Order:</p>
-        <ol id="all-player-scores">
+            </ul>
+            <span>Your score is:  </span><span id="your-score"></span>
+            <p>Scores in Order:</p>
+            <ol id="all-player-scores">
 
-        </ol>
-        <p>All words found:</p>
-        <ul id="all-words">
+            </ol>
+            <p>All words found:</p>
+            <ul id="all-words">
 
-        </ul>
-        <p>Some additional words no one found:</p>
-        <ul id="additional-words">
+            </ul>
+        </div>
+        <div style="display: inline-block; vertical-align: top;">
+            <p>Some additional words no one found:</p>
+            <ul id="additional-words">
 
-        </ul>
-        <button onclick="findAdditionalWords()">Click to find additional words</button>
+            </ul>
+            <button onclick="findAdditionalWords()">Click to find additional words</button>
+        </div>
     </div>
   </body>
 </html>
