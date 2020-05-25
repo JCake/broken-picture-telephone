@@ -35,6 +35,8 @@
       firebase.initializeApp(firebaseConfig);
       const db = firebase.firestore();
 
+      let playersCompleted = new Set();
+
       function setUp() {
         document.getElementById("word-entry-area").style.display = "none";
         document.getElementById("results-area").style.display = "none";
@@ -60,20 +62,24 @@
               setTimeout(() => {
                 this.completeGame();
               }, 60 * 1000);
+              playersCompleted = new Set();
             }
             if (gameSnapshot.data() && gameSnapshot.data().currentStatus === "Complete" && gameId === gameSnapshot.data().gameId) {
                 document.getElementById('word-entry-area').style.display = 'none';
                     db.collection(`game-${gameId}`)
                         .get()
                         .then((gameResultsSnapshot) => {
-                            let snapshotOfCompletionsFound = ++otherCompletionsFound;
-                            // hacked debounce:
-                            setTimeout(() => {
-                                if(snapshotOfCompletionsFound === otherCompletionsFound){
-                                    // No new completions since this one:
-                                    this.buildResultsPage(gameResultsSnapshot);
+                            let shouldRecalc = false;
+                            gameResultsSnapshot.forEach((result) => {
+                                let thisPlayer = result.data().playerId;
+                                if(!playersCompleted.has(thisPlayer)){
+                                    shouldRecalc = true;
+                                    playersCompleted.add(thisPlayer);
                                 }
-                            }, 250);   
+                            });
+                            if(shouldRecalc){
+                                this.buildResultsPage(gameResultsSnapshot); 
+                            } 
                         });
             }
           });
